@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container text-center">
+<form action="/event/" method="post" id="systemForm">
+	{% csrf_token %}
 	<div class="btn-group-vertical w-75">
-		<button type="button" class="btn btn-primary btn-lg btn-block">Submarine</button>
-		<button type="button" class="btn btn-primary btn-lg btn-block">Buoy</button>
+		<button type="submit" name="system" value="sub" form="systemForm" class="btn btn-primary btn-lg btn-block">Submarine</button>
+		<button type="submit" name="system" value="buoy" form="systemForm" class="btn btn-primary btn-lg btn-block">Buoy</button>
 	</div>
+</form>
 </div>
 {% endblock %}
