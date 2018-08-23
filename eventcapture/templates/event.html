@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container text-center">
-	<h1>Event for {{ system }}</h1>
+	<h1>Events for {{ device }}</h1>
 	<div class="btn-group-vertical w-75">
-		<button type="button" class="btn btn-primary btn-lg btn-block">Deploy</button>
-		<button type="button" class="btn btn-primary btn-lg btn-block">Recover</button>
+        {% for event in device.events.all %}
+		<button type="button" value="{{ event.id }}" class="btn btn-primary btn-lg btn-block">{{ event.name }}</button>
+        {% empty %}
+        {% include "error.html" with message="No events were found"%}
+        {% endfor %}
 	</div>
 </div>
 {% endblock %}
