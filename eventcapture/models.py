@@ -20,9 +20,14 @@ class Device(models.Model):
         'self',
         null=True,
         blank=True,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        help_text='A parent device for a ZooPlankton Tow is a Plankton Tow for example. Parent devices should not have any events associated with them.'
     )
-    events = models.ManyToManyField(Event)
+    events = models.ManyToManyField(
+        Event,
+        null=True,
+        blank=True
+    )
 
     def __str__(self):
         return self.name
@@ -40,7 +45,8 @@ class Cruise(models.Model):
     )
     devices = models.ManyToManyField(
         Device,
-        default=None
+        default=None,
+        limit_choices_to={'parent_device': None} # only show parent devices
     )
 
     def __str__(self):

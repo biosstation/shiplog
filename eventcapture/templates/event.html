@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container text-center">
-	<h1>Events for {{ device }}</h1>
+<h3>Please choose an event:</h3>
+<div class="text-center">
 	<div class="btn-group-vertical w-75">
         {% for event in device.events.all %}
 		<button type="button" value="{{ event.id }}" class="btn btn-primary btn-lg btn-block">{{ event.name }}</button>

@@ -1,7 +1,9 @@
-from django.urls import path
+from django.conf.urls import url
 from . import views
 
 urlpatterns = [
-    path('', views.index, name='index'),
-    path('event/', views.event, name='event'),
+    url(r'^$', views.index, name='index'),
+    url(r'^device/$', views.device, name='device'),
+    url(r'^event/(?P<device_id>[0-9]+)/$', views.event, name='event'),
+    url(r'^log/$', views.log, name='log'),
 ]
