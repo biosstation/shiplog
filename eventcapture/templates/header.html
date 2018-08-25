@@ -13,7 +13,11 @@
       </li>
     </ul>
     <span class="navbar-text">
-    {{ cruise.name }}
+    {% if cruise is null %}
+        <b style="color:red">Not cruising</b>
+    {% else %}
+        {{ cruise.name }}
+    {% endif %}
     </span>
   </div>
 </nav>

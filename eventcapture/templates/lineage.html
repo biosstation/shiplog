@@ -1,0 +1,6 @@
+<ol class="breadcrumb">
+{% for parent in parents %}
+    <li class="breadcrumb-item">{{ parent.name }}</li>
+{% endfor %}
+    <li class="breadcrumb-item">{{ device.name }}</li>
+</ol>

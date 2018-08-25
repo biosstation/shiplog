@@ -13,14 +13,16 @@ def device(request):
     if any(device.events.all()):
         return HttpResponseRedirect(reverse('event', args=[device_id]))
     child_devices = Device.objects.filter(parent_device=device_id)
-    context['devices'] = child_devices
+    context['children'] = child_devices
     context['device'] = device
+    context['parents'] = device.get_lineage()
     return render(request, 'device.html', context)
 
 def event(request, device_id):
     context = {}
     device = Device.objects.get(pk=int(device_id))
     context['device'] = device
+    context['parents'] = device.get_lineage()
     return render(request, 'event.html', context)
 
 def log(request):

@@ -29,6 +29,19 @@ class Device(models.Model):
         blank=True
     )
 
+    def get_lineage(self):
+        lineage = []
+        device = self
+        while True:
+            try:
+                device = device.parent_device
+            except AttributeError:
+                break
+            if device is None:
+                break
+            lineage.insert(0, device)
+        return lineage
+
     def __str__(self):
         return self.name
 
