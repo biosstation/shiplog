@@ -66,20 +66,39 @@ class Cruise(models.Model):
         return '{} ({})'.format(self.name, self.number)
 
     @classmethod
-    def get_active_cruises(cls):
+    def get_active_cruise(cls):
         right_now = datetime.now(pytz.utc)
         start_past = models.Q(start_date__lte=right_now)
         end_null = models.Q(end_date=None)
         end_future = models.Q(end_date__gte=right_now)
-        cruise = cls.objects.filter(start_past & (end_null | end_future))
-        return cruise
+        cruises = cls.objects.filter(start_past & (end_null | end_future))
+        if len(cruises) > 1:
+            raise ValueError('Overlapping cruises not allowed')
+        return cruises.first()
 
-    def get_devices(self):
-        devices_ids = self.devices.all()
-        return devices
+class ShipLog(models.Model):
+    cruise = models.ForeignKey(
+        'Cruise',
+        on_delete=models.CASCADE,
+    )
+    device = models.ForeignKey(
+        'Device',
+        on_delete=models.CASCADE,
+    )
+    event = models.ForeignKey(
+        'Event',
+        on_delete=models.CASCADE,
+    )
+    timestamp = models.DateTimeField()
 
     @classmethod
-    def get_devices_for_cruise(cls, cruise):
-        devices = [cd.device for cd in CruiseDevice.objects.filter(cruise=cruise.id)]
-        return devices
+    def log_entry(cls, cruise_id, device_id, event_id):
+        cruise = Cruise.objects.get(pk=int(cruise_id))
+        device = Device.objects.get(pk=int(device_id))
+        event = Event.objects.get(pk=int(event_id))
+        right_now = datetime.now(pytz.utc)
+        shiplog = cls(cruise=cruise, device=device, event=event, timestamp=right_now)
+        shiplog.save()
 
+    def __str__(self):
+        return '{:%Y-%m-%d %H:%M:%S}: {} - {} {}'.format(self.timestamp, self.cruise, self.device, self.event)

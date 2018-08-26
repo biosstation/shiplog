@@ -1,14 +1,15 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from eventcapture.models import Device
+from eventcapture.models import Device, Event, ShipLog
 
 def index(request):
     context = {}
     if request.method == 'POST':
-        device = request.POST.get('device', None)
-        event = request.POST.get('event', None)
-        # TODO log event
+        cruise_id = request.POST.get('cruise', None)
+        device_id = request.POST.get('device', None)
+        event_id = request.POST.get('event', None)
+        shiplog = ShipLog.log_entry(cruise_id, device_id, event_id)
     return render(request, 'index.html', context)
 
 def device(request, device_id):

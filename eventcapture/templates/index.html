@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <h3>Please choose a device:</h3>
-<div class="btn-group-vertical text-center w-75">
+<div class="btn-group-vertical w-100">
     {% for device in cruise.devices.all %}
     <a href="{% url 'device' device_id=device.id %}" class="btn btn-primary btn-lg btn-block big-btn">{{ device.name }}</a>
     {% endfor %}
