@@ -1,17 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
 {% include "lineage.html" %}
-<h3>Please choose a specific device:<h3>
-<div class="text-center">
-<form action="{% url 'device' %}" method="post" id="deviceForm">
-	{% csrf_token %}
-	<div class="btn-group-vertical w-75">
-        {% for child in children.all %}
-		<button type="submit" name="device" value="{{ child.id }}" form="deviceForm" class="btn btn-primary btn-lg btn-block">{{ child.name }}</button>
-        {% empty %}
-        {% include "error.html" with message="No events were found"%}
-	    {% endfor %}
-    </div>
-</form>
+<h3>Please choose a device:</h3>
+<div class="btn-group-vertical text-center w-75">
+    {% for child in children.all %}
+    <a href="{% url 'device' device_id=child.id %}" class="btn btn-primary btn-lg btn-block big-btn">{{ child.name }}</a>
+    {% endfor %}
 </div>
+{% if not children.all %}
+{% include "error.html" with message="No events were found"%}
+{% endif %}
 {% endblock %}

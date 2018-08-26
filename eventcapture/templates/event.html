@@ -2,13 +2,16 @@
 {% block content %}
 {% include "lineage.html" %}
 <h3>Please choose an event:</h3>
-<div class="text-center">
-	<div class="btn-group-vertical w-75">
+<form action="{% url 'index' %}" method="post">
+	{% csrf_token %}
+	<div class="btn-group-vertical w-75 text-center">
         {% for event in device.events.all %}
-		<button type="button" value="{{ event.id }}" class="btn btn-primary btn-lg btn-block">{{ event.name }}</button>
-        {% empty %}
-        {% include "error.html" with message="No events were found"%}
+		<button type="submit" name="event" value="{{ event.id }}" class="btn btn-primary btn-lg btn-block big-btn">{{ event.name }}</button>
         {% endfor %}
 	</div>
-</div>
+    <input type="hidden" name="device" value="{{ device.id }}">
+</form>
+{% if not device.events.all %}
+{% include "error.html" with message="No events were found"%}
+{% endif %}
 {% endblock %}

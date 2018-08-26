@@ -1,14 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 <h3>Please choose a device:</h3>
-<div class="text-center">
-<form action="{% url 'device' %}" method="post" id="deviceForm">
-	{% csrf_token %}
-	<div class="btn-group-vertical w-75">
-        {% for device in cruise.devices.all %}
-		<button type="submit" name="device" value="{{ device.id }}" form="deviceForm" class="btn btn-primary btn-lg btn-block">{{ device.name }}</button>
-	    {% endfor %}
-    </div>
-</form>
+<div class="btn-group-vertical text-center w-75">
+    {% for device in cruise.devices.all %}
+    <a href="{% url 'device' device_id=device.id %}" class="btn btn-primary btn-lg btn-block big-btn">{{ device.name }}</a>
+    {% endfor %}
 </div>
 {% endblock %}

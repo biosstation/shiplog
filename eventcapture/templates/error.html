@@ -1,6 +1,9 @@
-<div class="container">
-    <div class="alert alert-danger text-center cent msg">
-        <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-        {{ message }}
-    </div>
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <h4 class="alert-heading">{{ message }}</h4>
+    <p>Please have an administrator add events for this device.</p>
+    <hr>
+    <p class="mb-0"><a href="{% url 'index' %}">Go home</a></p>
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
 </div>

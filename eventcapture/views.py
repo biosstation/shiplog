@@ -4,11 +4,15 @@ from django.urls import reverse
 from eventcapture.models import Device
 
 def index(request):
-    return render(request, 'index.html')
-
-def device(request):
     context = {}
-    device_id = request.POST.get('device', None)
+    if request.method == 'POST':
+        device = request.POST.get('device', None)
+        event = request.POST.get('event', None)
+        # TODO log event
+    return render(request, 'index.html', context)
+
+def device(request, device_id):
+    context = {}
     device = Device.objects.get(pk=int(device_id))
     if any(device.events.all()):
         return HttpResponseRedirect(reverse('event', args=[device_id]))
