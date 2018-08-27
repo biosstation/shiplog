@@ -1,6 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container text-center">
-<h1>Log<h1>
-</div>
+{% if shiplog %}
+<table class="table table-striped">
+  <tbody>
+  {% for entry in shiplog %}
+    <tr>
+      <td>{{ entry.timestamp|date:"c" }}</td>
+      <td>{{ entry.event }}</td>
+      <td>{{ entry.device }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+{% include 'warning.html' with header="Empty Log" message="No events have been logged yet" %}
+{% endif %}
 {% endblock %}

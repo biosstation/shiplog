@@ -100,5 +100,9 @@ class ShipLog(models.Model):
         shiplog = cls(cruise=cruise, device=device, event=event, timestamp=right_now)
         shiplog.save()
 
+    @classmethod
+    def get_shiplog(cls, cruise):
+        return cls.objects.filter(cruise_id=cruise.id)
+
     def __str__(self):
         return '{:%Y-%m-%d %H:%M:%S}: {} - {} {}'.format(self.timestamp, self.cruise, self.device, self.event)

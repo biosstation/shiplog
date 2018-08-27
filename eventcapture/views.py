@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from eventcapture.models import Device, Event, ShipLog
+from eventcapture.models import Cruise, Device, Event, ShipLog
 
 def index(request):
     context = {}
@@ -31,4 +31,8 @@ def event(request, device_id):
     return render(request, 'event.html', context)
 
 def log(request):
-    return render(request, 'log.html')
+    context = {}
+    cruise = Cruise.get_active_cruise()
+    if cruise:
+        context['shiplog'] = ShipLog.get_shiplog(cruise)
+    return render(request, 'log.html', context)
