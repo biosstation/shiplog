@@ -1,6 +1,7 @@
 <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
 {% for parent in parents %}
-    <li class="breadcrumb-item">{{ parent.name }}</li>
+    <li class="breadcrumb-item"><a href="{% url 'device' device_id=parent.id %}">{{ parent.name }}</a></li>
 {% endfor %}
     <li class="breadcrumb-item">{{ device.name }}</li>
 </ol>
