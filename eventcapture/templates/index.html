@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 {% if cruise %}
-{% include "lineage.html" %}
+{% include 'lineage.html' %}
 <h3>Please choose a device:</h3>
 <div class="btn-group-vertical w-100">
     {% for device in cruise.devices.all %}
@@ -10,5 +10,22 @@
 </div>
 {% else %}
 {% include 'warning.html' with header="Not Cruising" message="The ship is not cruising at this time" %}
+{% endif %}
+{% endblock %}
+{% block js %}
+{% if success %}
+<script>
+{% autoescape on %}
+$(function() {
+    var options =  {
+        content: {% include 'success.html' %},
+        style: "toast",
+        timeout: 5000, // time in milliseconds
+        htmlAllowed: true
+    }
+    $.snackbar(options);
+});
+{% endautoescape %}
+</script>
 {% endif %}
 {% endblock %}

@@ -4,12 +4,22 @@ from django.urls import reverse
 from eventcapture.models import Cruise, Device, Event, ShipLog
 
 def index(request):
-    context = {}
-    if request.method == 'POST':
-        cruise_id = request.POST.get('cruise', None)
-        device_id = request.POST.get('device', None)
-        event_id = request.POST.get('event', None)
-        shiplog = ShipLog.log_entry(cruise_id, device_id, event_id)
+    if request.method != 'POST':
+        return render(request, 'index.html')
+    cruise_id = request.POST.get('cruise', None)
+    device_id = request.POST.get('device', None)
+    event_id = request.POST.get('event', None)
+    if cruise_id is None or device_id is None or event_id is None:
+        return render(request, 'index.html', {'error': 'Unknown cruise, device, or event'})
+    cruise = Cruise.objects.get(pk=int(cruise_id))
+    device = Device.objects.get(pk=int(device_id))
+    event = Event.objects.get(pk=int(event_id))
+    ShipLog.log_entry(cruise, device, event)
+    context = {
+        'success': True,
+        'device': device,
+        'event': event
+    }
     return render(request, 'index.html', context)
 
 def device(request, device_id):
