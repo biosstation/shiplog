@@ -6,7 +6,7 @@
 	{% csrf_token %}
 	<div class="btn-group-vertical w-100">
         {% for event in device.events.all %}
-		<button type="submit" name="event" value="{{ event.id }}" class="btn btn-primary btn-lg btn-block big-btn">{{ event.name }}</button>
+		<button type="submit" name="event" value="{{ event.id }}" class="btn btn-primary btn-block btn-xlarge">{{ event.name }}</button>
         {% endfor %}
 	</div>
     <input type="hidden" name="device" value="{{ device.id }}">

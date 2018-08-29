@@ -4,7 +4,7 @@
 <h3>Please choose a device:</h3>
 <div class="btn-group-vertical w-100">
     {% for child in children.all %}
-    <a href="{% url 'device' device_id=child.id %}" class="btn btn-primary btn-lg btn-block big-btn">{{ child.name }}</a>
+    <a href="{% url 'device' device_id=child.id %}" class="btn btn-primary btn-block btn-xlarge">{{ child.name }}</a>
     {% endfor %}
 </div>
 {% if not children.all %}

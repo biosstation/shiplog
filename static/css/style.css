@@ -1,6 +1,11 @@
-.big-btn {
-    margin-bottom: 10px;
-    border-radius: 10px !important;
+.btn-xlarge {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 20px 30px         !important;
+    font-size: 30px            !important;
+    -webkit-border-radius: 8px !important;
+       -moz-border-radius: 8px !important;
+            border-radius: 8px !important;
 }
 
 html, body {
@@ -22,3 +27,4 @@ html, body {
     height: 100%;
     padding: 50px;
 }
+
