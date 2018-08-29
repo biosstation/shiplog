@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from eventcapture.models import Cruise, Device, Event, ShipLog
+from eventcapture import utils
 
 def index(request):
     if request.method != 'POST':
@@ -44,5 +45,13 @@ def log(request):
     context = {}
     cruise = Cruise.get_active_cruise()
     if cruise:
-        context['shiplog'] = ShipLog.get_shiplog(cruise)
+        log = ShipLog.get_log(cruise)
+        context['log'] = log
+        if request.method == 'POST':
+            action = request.POST.get('action', None)
+            if action == 'download':
+                df = utils.to_df(log)
+                utils.to_csv(df)
+
     return render(request, 'log.html', context)
+

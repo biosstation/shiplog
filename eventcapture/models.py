@@ -8,6 +8,10 @@ class Event(models.Model):
         unique=True
     )
 
+    @classmethod
+    def event_dict(cls):
+        return {val['id']: val['name'] for val in cls.objects.values()}
+
     def __str__(self):
         return self.name
 
@@ -41,6 +45,10 @@ class Device(models.Model):
                 break
             lineage.insert(0, device)
         return lineage
+
+    @classmethod
+    def device_dict(cls):
+        return {val['id']: val['name'] for val in cls.objects.values()}
 
     def __str__(self):
         return self.name
@@ -98,7 +106,7 @@ class ShipLog(models.Model):
         shiplog.save()
 
     @classmethod
-    def get_shiplog(cls, cruise):
+    def get_log(cls, cruise):
         return cls.objects.filter(cruise_id=cruise.id)
 
     def __str__(self):
