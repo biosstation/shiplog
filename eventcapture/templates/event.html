@@ -13,6 +13,6 @@
     <input type="hidden" name="cruise" value="{{ cruise.id }}">
 </form>
 {% if not device.events.all %}
-{% include "error.html" with message="No events were found"%}
+{% include "error.html" with error="No events were found" message="Please have an admin add events for this device" %}
 {% endif %}
 {% endblock %}

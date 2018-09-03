@@ -10,11 +10,11 @@
 </head>
 <body>
 {% include "header.html" %}
-{% if error %}
-{% include "error.html" with message=error %}
-{% else %}
 <div class="background" onclick="window.location='/'">
 <div class="container">
+{% if error %}
+{% include "error.html" with header=error message=message %}
+{% else %}
 {% block content %}
 {% endblock %}
 </div>

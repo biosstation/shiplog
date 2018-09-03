@@ -8,6 +8,6 @@
     {% endfor %}
 </div>
 {% if not children.all %}
-{% include "error.html" with message="No events were found"%}
+{% include "error.html" with error="No events were found" message="Please have an admin add events for this device" %}
 {% endif %}
 {% endblock %}
