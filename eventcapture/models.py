@@ -84,6 +84,11 @@ class Cruise(models.Model):
             raise ValueError('Overlapping cruises not allowed')
         return cruises.first()
 
+    def has_cruise_ended(self):
+        right_now = datetime.now(pytz.utc)
+        end_date = self.end_date
+        return end_date is not None and end_date < right_now
+
 class ShipLog(models.Model):
     cruise = models.ForeignKey(
         'Cruise',
@@ -98,6 +103,9 @@ class ShipLog(models.Model):
         on_delete=models.CASCADE,
     )
     timestamp = models.DateTimeField()
+
+    def has_cruise_ended(self):
+        return False  #TODO:
 
     @classmethod
     def log_entry(cls, cruise, device, event):
