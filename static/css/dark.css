@@ -10,6 +10,11 @@
     background-color: darkslategrey!important;
 }
 
+.breadcrumb {
+    color: tomato;!important;
+    background-color: black!important;
+}
+
 body {
     background-color: black!important;
 }
