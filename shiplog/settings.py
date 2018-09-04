@@ -125,3 +125,4 @@ MEDIA_URL = '/media/'
 
 # User settings
 EVENT_LOG_FILENAME = '{}_EventLog.csv'
+GPS_FILENAME = 'http://192.168.51.42/CruiseData/AE1824/METOC/MainMast_CR6/Data/MainMetMast_Nav.dat'

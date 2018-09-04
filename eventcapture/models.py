@@ -1,6 +1,9 @@
 import pytz
+import pandas as pd
 from django.db import models
+from django.conf import settings
 from datetime import datetime
+
 
 class Event(models.Model):
     name = models.CharField(
@@ -67,7 +70,7 @@ class Cruise(models.Model):
     devices = models.ManyToManyField(
         Device,
         default=None,
-        limit_choices_to={'parent_device': None} # only show parent devices
+        limit_choices_to={'parent_device': None} #TODO: only showing parent devices
     )
 
     def __str__(self):
@@ -84,6 +87,32 @@ class Cruise(models.Model):
             raise ValueError('Overlapping cruises not allowed')
         return cruises.first()
 
+class GPS(models.Model):
+    latitude_degree = models.IntegerField()
+    longitude_degree = models.IntegerField()
+    latitude_minute = models.DecimalField(max_digits=8, decimal_places=4)
+    longitude_minute = models.DecimalField(max_digits=8, decimal_places=4)
+
+    def save(self, *args, **kwargs):
+        df = self._read_gps_file()
+        gps = self._get_latest_gps_record(df)
+        self.latitude_degree = gps.iloc[0]['Lat_deg']
+        self.longitude_degree = gps.iloc[0]['Lon_deg']
+        self.latitude_minute = gps.iloc[0]['Lat_min']
+        self.longitude_minute = gps.iloc[0]['Lon_min']
+        super().save(*args, **kwargs)
+
+    def _read_gps_file(self):
+        dtype = {'Lat_deg':int, 'Lat_min':float, 'Lon_deg':int, 'Lon_min':float}
+        df = pd.read_csv(settings.GPS_FILENAME, skiprows=[0, 2, 3], usecols=dtype.keys(), header=0, dtype=dtype)
+        return df
+
+    def _get_latest_gps_record(self, df):
+        return df.tail(1)
+
+    def __str__(self):
+        return '{}.{}, {}.{}'.format(self.latitude_degree, self.latitude_minute, self.longitude_degree, self.longitude_minute)
+
 class ShipLog(models.Model):
     cruise = models.ForeignKey(
         'Cruise',
@@ -97,13 +126,18 @@ class ShipLog(models.Model):
         'Event',
         on_delete=models.CASCADE,
     )
+    gps = models.ForeignKey(
+        'GPS',
+        on_delete=models.CASCADE,
+    )
     timestamp = models.DateTimeField()
-
 
     @classmethod
     def log_entry(cls, cruise, device, event):
+        gps = GPS()
+        gps.save()
         right_now = datetime.now(pytz.utc)
-        shiplog = cls(cruise=cruise, device=device, event=event, timestamp=right_now)
+        shiplog = cls(cruise=cruise, device=device, event=event, gps=gps, timestamp=right_now)
         shiplog.save()
 
     @classmethod
