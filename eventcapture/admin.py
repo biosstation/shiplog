@@ -19,7 +19,6 @@ class CruiseListFilter(admin.SimpleListFilter):
 
     # Parameter for the filter that will be used in the URL query.
     parameter_name = 'cruises'
-    default_value = None
 
     def lookups(self, request, model_admin):
         """
@@ -46,22 +45,6 @@ class CruiseListFilter(admin.SimpleListFilter):
         # Compare the requested value to decide how to filter the queryset.
         if self.value():
             return queryset.filter(cruise_id=self.value())
-        return queryset
-
-    def value(self):
-        """
-        Overriding this method will allow us to always have a default value.
-        """
-        value = super(CruiseListFilter, self).value()
-        if value is None:
-            if self.default_value is None:
-                # If there is at least one Cruise, return the first by latest start date. Otherwise, None.
-                first_cruise = Cruise.objects.order_by('start_date').last()
-                value = None if first_cruise is None else first_cruise.id
-                self.default_value = value
-            else:
-                value = self.default_value
-        return str(value)
 
 class ShipLogForm(forms.ModelForm):
     class Meta:
@@ -70,36 +53,18 @@ class ShipLogForm(forms.ModelForm):
 
 class ShipLogAdmin(admin.ModelAdmin):
     form = ShipLogForm
-    list_display = ('device', 'event', 'timestamp', )
+    list_display = ('timestamp', 'event', 'device', 'cruise', )
     list_filter = (CruiseListFilter, )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        form = self.form()
-        if form.instance.has_cruise_ended():
-            # disable changing past cruise logs
-            self.list_display_links = None
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['cruise_id'] = request.GET.get('cruises', 0)
+        return super().changelist_view(request, extra_context=extra_context)
 
 class CruiseForm(forms.ModelForm):
     class Meta:
         model = Cruise
         exclude = []
-
-    def has_cruise_ended(self):
-        right_now = datetime.now(pytz.utc)
-        end_date = self.instance.end_date
-        return end_date is not None and end_date < right_now
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        instance = getattr(self, 'instance', None)
-        if not instance or not instance.id:
-            return
-        if not self.has_cruise_ended():
-            return
-        # if the cruise has not ended, user can still edit
-        for field in self.fields:
-            self.fields[field].disabled = True
 
 class CruiseAdmin(admin.ModelAdmin):
     form = CruiseForm

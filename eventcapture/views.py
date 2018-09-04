@@ -1,6 +1,6 @@
 import os
 from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from eventcapture.models import Cruise, Device, Event, ShipLog
 from eventcapture import utils
@@ -42,20 +42,21 @@ def event(request, device_id):
     context['parents'] = device.get_lineage()
     return render(request, 'event.html', context)
 
+def download(request, cruise_id):
+    csv_path = utils.to_csv(cruise_id)
+    with open(csv_path, 'rb') as f:
+        response = HttpResponse(f.read(), content_type='text/csv')
+        response['Content-Disposition'] = 'inline; filename=' + os.path.basename(csv_path)
+        return response
+
 def log(request):
     cruise = Cruise.get_active_cruise()
     if not cruise:
         return render(request, 'log.html')
     context = {}
-    log = ShipLog.get_log(cruise)
-    context['log'] = log
+    context['log'] = ShipLog.get_log(cruise)
     if request.method != 'POST':
         return render(request, 'log.html', context)
     action = request.POST.get('action', None)
     if action == 'download':
-        csv_path = utils.to_csv(log, cruise)
-        with open(csv_path, 'rb') as f:
-            response = HttpResponse(f.read(), content_type='text/csv')
-            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(csv_path)
-            return response
-
+        return HttpResponseRedirect(reverse('download', args=[cruise.id]))
