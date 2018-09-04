@@ -11,11 +11,11 @@ def active_cruise(request):
 
 def color_mode(request):
     context = {}
-    if request.session['color_mode'] is None:
-        request.session['color_mode'] = 'light'
-    if request.GET.get('color_mode', None) is None:
-        return context
     try:
+        if request.session['color_mode'] is None:
+            request.session['color_mode'] = 'light'
+        if request.GET.get('color_mode', None) is None:
+            return context
         request.session['color_mode'] = request.GET.get('color_mode', 'light')
     except KeyError:
         request.session['color_mode'] = 'light'
