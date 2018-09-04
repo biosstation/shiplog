@@ -1,5 +1,5 @@
 {% load staticfiles %}
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
+<nav class="navbar navbar-expand-lg navbar-{{ request.session.color_mode }} bg-{{ request.session.color_mode }}">
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo03" aria-controls="navbarTogglerDemo03" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
     </button>
@@ -28,5 +28,7 @@
             </li>
         </ul>
     </div>
-    <a href="/admin/"><img class="p-2" src="{% static 'img/person.png' %}" alt="admin icon"></a>
+    {% with 'img/'|add:request.session.color_mode|add:'-person.png' as person %}
+    <a href="/admin/"><img class="p-2" src="{% static person %}" alt="admin icon"></a>
+    {% endwith %}
 </nav>
