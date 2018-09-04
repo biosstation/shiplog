@@ -53,6 +53,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'eventcapture.context_processors.active_cruise',
+                'eventcapture.context_processors.color_mode',
             ],
         },
     },

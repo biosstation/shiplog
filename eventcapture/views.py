@@ -60,3 +60,4 @@ def log(request):
     action = request.POST.get('action', None)
     if action == 'download':
         return HttpResponseRedirect(reverse('download', args=[cruise.id]))
+

@@ -100,6 +100,7 @@ class ShipLog(models.Model):
     timestamp = models.DateTimeField()
 
 
+    @classmethod
     def log_entry(cls, cruise, device, event):
         right_now = datetime.now(pytz.utc)
         shiplog = cls(cruise=cruise, device=device, event=event, timestamp=right_now)

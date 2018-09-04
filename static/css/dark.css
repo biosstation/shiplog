@@ -1,0 +1,19 @@
+.btn-xlarge {
+    color: tomato!important;
+    border-color: tomato!important;
+    background-color: dimgrey!important;
+}
+
+.btn-xlarge:hover, .btn-xlarge:focus, .btn-xlarge:active {
+    color: tomato!important;
+    border-color: indianred!important;
+    background-color: darkslategrey!important;
+}
+
+body {
+    background-color: black!important;
+}
+
+h3 {
+    color: tomato!important;
+}
