@@ -15,7 +15,7 @@ SECRET_KEY = '#y3%(f%4i@#)p&so_fw%*)p)3z!y=_j8_xfagu3n=@7w^m427$'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.51.49']
+ALLOWED_HOSTS = ['192.168.50.45']
 
 # Application definition
 
@@ -126,3 +126,4 @@ MEDIA_URL = '/media/'
 # User settings
 EVENT_LOG_FILENAME = '{}_EventLog.csv'
 GPS_FILENAME = 'http://192.168.51.42/CruiseData/AE1824/METOC/MainMast_CR6/Data/MainMetMast_Nav.dat'
+WINCH_DATAFILE_PATH = '/mnt/winch/*WinchDAC.csv'

@@ -2,7 +2,7 @@ import pytz
 from datetime import datetime
 from django import forms
 from django.contrib import admin
-from .models import Cruise, Device, Event, ShipLog
+from .models import Cruise, Device, Event, ShipLog, Cast, WinchStats
 
 admin.site.site_header = 'ShipLog Admin Site'
 admin.site.index_title = 'ShipLog administration'
@@ -73,4 +73,6 @@ admin.site.register(Device)
 admin.site.register(Event)
 admin.site.register(Cruise, CruiseAdmin)
 admin.site.register(ShipLog, ShipLogAdmin)
+admin.site.register(Cast)
+admin.site.register(WinchStats)
 

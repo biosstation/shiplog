@@ -1,3 +1,5 @@
+from glob import glob
+import ntpath
 import pytz
 import pandas as pd
 from django.db import models
@@ -157,6 +159,48 @@ class ShipLog(models.Model):
     def __str__(self):
         return '{:%Y-%m-%d %H:%M:%S}: {} - {} {}'.format(self.timestamp, self.cruise, self.device, self.event)
 
+class WinchStats(models.Model):
+    max_tension = models.DecimalField(max_digits=6, decimal_places=1)
+    max_payout = models.DecimalField(max_digits=6, decimal_places=1)
+    max_speed = models.DecimalField(max_digits=4, decimal_places=1)
+
+    def get_winch_data(self, cast):
+        deploy_date = cast.deployment.timestamp.date()
+        recover_date = cast.recovery.timestamp.date()
+        
+        winch_num = 2  #TODO get this from cruise.recovery.device.winch_number
+       
+        # TODO: put some of these in settings
+        winch_cols = [2, 3, 4]
+        usecols = [0, 1]
+        usecols.extend([a + 3 * (winch_num - 1) for a in winch_cols])
+        names = ['Seconds', 'Date', 'Tension', 'Speed', 'Payout']
+        skiprows = [0, 1, 2, 3, 4, 5, 6, 7, 9]
+        winch_data = []
+        for f in glob(settings.WINCH_DATAFILE_PATH):
+            winch_date = datetime.strptime(ntpath.basename(f), '%Y-%m-%d %H-%M-%S WinchDAC.csv').date()
+            if deploy_date <= winch_date and winch_date <= recover_date:
+                df = pd.read_csv(f, skiprows=skiprows, usecols=usecols)
+                df['Clock'] = pd.to_datetime(df['Clock'], format='%m/%d/%Y %I:%M:%S %p', utc=True)
+                df.columns = names
+                winch_data.append(df)
+        winch_data = pd.concat(winch_data)
+        deploy_time = cast.deployment.timestamp
+        recover_time = cast.recovery.timestamp
+        cast_winch_data = winch_data[((deploy_time <= winch_data['Date']) & (winch_data['Date'] <= recover_time))]
+        return cast_winch_data 
+    def set_winch_stats(self, df):
+        self.max_tension = df['Tension'].max() # in lbs
+        self.max_payout = df['Payout'].max()  # in meters
+        self.max_speed = df['Speed'].max()   # in meters per minute
+
+    def save(self, *args, **kwargs):
+        cast = kwargs.get('cast')
+        df = self.get_winch_data(cast)
+        self.set_winch_stats(df)
+        super().save()
+    
+
 class Cast(models.Model):
     deployment = models.ForeignKey(
         'ShipLog',
@@ -168,6 +212,16 @@ class Cast(models.Model):
         on_delete=models.CASCADE,
         related_name='recover_event',
     )
+    winch_stats = models.ForeignKey(
+        'WinchStats',
+        on_delete=models.CASCADE,
+    )
+
+    def save(self, *args, **kwargs):
+        winch_stats = WinchStats()
+        winch_stats.save(cast=self)
+        self.winch_stats = winch_stats
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return '{cruise} {device} cast recovered at {ts:%H:%M} on {ts:%Y-%m-%d}'.format(cruise=self.recovery.cruise.name, device=self.recovery.device.name, ts=self.recovery.timestamp)
