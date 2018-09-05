@@ -2,8 +2,9 @@ import os
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
-from eventcapture.models import Cruise, Device, Event, ShipLog
+from django.conf import settings
 from eventcapture import utils
+from eventcapture.models import Cruise, Device, Event, ShipLog, Cast
 
 def index(request):
     if request.method != 'POST':
@@ -42,22 +43,39 @@ def event(request, device_id):
     context['parents'] = device.get_lineage()
     return render(request, 'event.html', context)
 
-def download(request, cruise_id):
-    csv_path = utils.to_csv(cruise_id)
+def download(request, log, cruise_id):
+    if log == 'eventlog':
+        csv_path = utils.to_csv(ShipLog, cruise_id, settings.EVENT_LOG_FILENAME)
+    elif log == 'castlog':
+        csv_path = utils.to_csv(Cast, cruise_id, settings.CAST_LOG_FILENAME)
+    else:
+        raise ValueError('Unknown log type')
     with open(csv_path, 'rb') as f:
         response = HttpResponse(f.read(), content_type='text/csv')
         response['Content-Disposition'] = 'inline; filename=' + os.path.basename(csv_path)
         return response
 
-def log(request):
+def eventlog(request):
     cruise = Cruise.get_active_cruise()
     if not cruise:
-        return render(request, 'log.html')
+        return render(request, 'eventlog.html')
     context = {}
     context['log'] = ShipLog.get_log(cruise)
     if request.method != 'POST':
-        return render(request, 'log.html', context)
+        return render(request, 'eventlog.html', context)
     action = request.POST.get('action', None)
     if action == 'download':
-        return HttpResponseRedirect(reverse('download', args=[cruise.id]))
+        return HttpResponseRedirect(reverse('download', args=['eventlog', cruise.id]))
+
+def castlog(request):
+    cruise = Cruise.get_active_cruise()
+    if not cruise:
+        return render(request, 'castlog.html')
+    context = {}
+    context['log'] = Cast.get_log(cruise)
+    if request.method != 'POST':
+        return render(request, 'castlog.html', context)
+    action = request.POST.get('action', None)
+    if action == 'download':
+        return HttpResponseRedirect(reverse('download', args=['castlog', cruise.id]))
 

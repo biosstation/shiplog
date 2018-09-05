@@ -17,7 +17,10 @@
                 <a class="nav-link" href="{% url 'index' %}">Home</a>
             </li>
             <li class="nav-item active">
-                <a class="nav-link" href="{% url 'log' %}">View Log</a>
+                <a class="nav-link" href="{% url 'eventlog' %}">Event Log</a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="{% url 'castlog' %}">Cast Log</a>
             </li>
             <li class="nav-item active">
                 {% if request.session.color_mode == 'light' %}

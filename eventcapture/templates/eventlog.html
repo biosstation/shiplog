@@ -3,7 +3,7 @@
 {% if log %}
 <div class="text-center mt-3 mb-3">
     <h1>Event Log for {{ cruise.name }} ({{ cruise.number }})</h1>
-    <form action="{% url 'log' %}" method="post">
+    <form action="{% url 'eventlog' %}" method="post">
        {% csrf_token %}
        <button class="btn btn-primary" type="submit" name="action" value="download">Download</button>
     <a href="" class="btn btn-primary">Email</a>

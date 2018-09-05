@@ -1,10 +1,11 @@
-from glob import glob
-import ntpath
+import os
 import pytz
+import ntpath
 import pandas as pd
+from glob import glob
+from datetime import datetime
 from django.db import models
 from django.conf import settings
-from datetime import datetime
 
 
 class Event(models.Model):
@@ -50,6 +51,29 @@ class Device(models.Model):
     def __str__(self):
         return self.name
 
+class Wire(models.Model):
+    name = models.CharField(max_length=30)
+    serial_number = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return '{} ({})'.format(self.name, self.serial_number)
+
+class Config(models.Model):
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    wire = models.ForeignKey(Wire, on_delete=models.CASCADE, null=True, blank=True)
+    WINCH_CHOICES = (
+        (0, ''),
+        (1, '1'),
+        (2, '2'),
+        (3, '3'),
+    )
+    winch = models.IntegerField(choices=WINCH_CHOICES)
+
+    def __str__(self):
+        if self.winch:
+            return '{} on winch #{}'.format(self.device, self.winch)
+        return '{} not on a winch'.format(self.device)
+
 class Cruise(models.Model):
     start_date = models.DateTimeField()
     end_date = models.DateTimeField(blank=True, null=True)
@@ -61,10 +85,9 @@ class Cruise(models.Model):
         max_length=16,
         unique=True
     )
-    devices = models.ManyToManyField(
-        Device,
+    config = models.ManyToManyField(
+        Config,
         default=None,
-        limit_choices_to={'parent_device': None} #TODO: only showing parent devices
     )
 
     def __str__(self):
@@ -156,24 +179,35 @@ class ShipLog(models.Model):
     def get_all_logs(cls):
         return cls.objects.all()
 
+    @classmethod
+    def _to_df(cls, log):
+        columns = list(log.values('timestamp', 'device_id', 'event_id', 'gps'))
+        df = pd.DataFrame(columns)
+        df['device_id'] = df['device_id'].apply(lambda x: Device.objects.get(pk=x))
+        df['event_id'] = df['event_id'].apply(lambda x: Event.objects.get(pk=x))
+        df['gps'] = df['gps'].apply(lambda x: GPS.objects.get(pk=x))
+        df = df.set_index('timestamp')
+        df = df.rename(columns={'device_id': 'device', 'event_id': 'event'})
+        return df
+    
     def __str__(self):
         return '{:%Y-%m-%d %H:%M:%S}: {} - {} {}'.format(self.timestamp, self.cruise, self.device, self.event)
 
-class WinchStats(models.Model):
-    max_tension = models.DecimalField(max_digits=6, decimal_places=1)
-    max_payout = models.DecimalField(max_digits=6, decimal_places=1)
-    max_speed = models.DecimalField(max_digits=4, decimal_places=1)
+class CastReport(models.Model):
+    max_tension = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True, default=None)
+    max_payout = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True, default=None)
+    max_speed = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True, default=None)
 
     def get_winch_data(self, cast):
         deploy_date = cast.deployment.timestamp.date()
         recover_date = cast.recovery.timestamp.date()
+        device_id = cast.recovery.device.id
+        winch_number = cast.recovery.cruise.config.get(device__id=device_id).winch
         
-        winch_num = 2  #TODO get this from cruise.recovery.device.winch_number
-       
         # TODO: put some of these in settings
         winch_cols = [2, 3, 4]
         usecols = [0, 1]
-        usecols.extend([a + 3 * (winch_num - 1) for a in winch_cols])
+        usecols.extend([a + 3 * (winch_number - 1) for a in winch_cols])
         names = ['Seconds', 'Date', 'Tension', 'Speed', 'Payout']
         skiprows = [0, 1, 2, 3, 4, 5, 6, 7, 9]
         winch_data = []
@@ -189,19 +223,24 @@ class WinchStats(models.Model):
         recover_time = cast.recovery.timestamp
         cast_winch_data = winch_data[((deploy_time <= winch_data['Date']) & (winch_data['Date'] <= recover_time))]
         return cast_winch_data 
-    def set_winch_stats(self, df):
-        self.max_tension = df['Tension'].max() # in lbs
-        self.max_payout = df['Payout'].max()  # in meters
-        self.max_speed = df['Speed'].max()   # in meters per minute
+
+    def set_cast_report(self, df):
+        if not df.empty:
+            self.max_tension = df['Tension'].max() # in lbs
+            self.max_payout = df['Payout'].max()  # in meters
+            self.max_speed = df['Speed'].max()   # in meters per minute
 
     def save(self, *args, **kwargs):
         cast = kwargs.get('cast')
         df = self.get_winch_data(cast)
-        self.set_winch_stats(df)
+        self.set_cast_report(df)
         super().save()
     
-
 class Cast(models.Model):
+    cruise = models.ForeignKey(
+        'Cruise',
+        on_delete=models.CASCADE,
+    )
     deployment = models.ForeignKey(
         'ShipLog',
         on_delete=models.CASCADE,
@@ -212,15 +251,33 @@ class Cast(models.Model):
         on_delete=models.CASCADE,
         related_name='recover_event',
     )
-    winch_stats = models.ForeignKey(
-        'WinchStats',
+    cast_report = models.ForeignKey(
+        'CastReport',
         on_delete=models.CASCADE,
     )
+    
+    @classmethod
+    def _to_df(cls, log):
+        columns = list(log.values('deployment', 'recovery', 'cast_report'))
+        df = pd.DataFrame(columns)
+        df['Deployed'] = df['deployment'].apply(lambda x: ShipLog.objects.get(pk=x).timestamp)
+        df['Recovered'] = df['recovery'].apply(lambda x: ShipLog.objects.get(pk=x).timestamp)
+        df['Device'] = df['recovery'].apply(lambda x: ShipLog.objects.get(pk=x).device)
+        df['Max Tension'] = df['cast_report'].apply(lambda x: CastReport.objects.get(pk=x).max_tension)
+        df['Max Speed'] = df['cast_report'].apply(lambda x: CastReport.objects.get(pk=x).max_tension)
+        df['Max Payout'] = df['cast_report'].apply(lambda x: CastReport.objects.get(pk=x).max_tension)
+        df = df.drop(['cast_report', 'deployment', 'recovery'], axis=1)
+        return df
+    
+    @classmethod
+    def get_log(cls, cruise_id):
+        return cls.objects.filter(cruise_id=cruise_id)
 
     def save(self, *args, **kwargs):
-        winch_stats = WinchStats()
-        winch_stats.save(cast=self)
-        self.winch_stats = winch_stats
+        cast_report = CastReport()
+        cast_report.save(cast=self)
+        self.cast_report = cast_report
+        self.cruise = self.recovery.cruise
         super().save(*args, **kwargs)
 
     def __str__(self):
