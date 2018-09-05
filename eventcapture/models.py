@@ -111,7 +111,7 @@ class GPS(models.Model):
         return df.tail(1)
 
     def __str__(self):
-        return '{}.{}, {}.{}'.format(self.latitude_degree, self.latitude_minute, self.longitude_degree, self.longitude_minute)
+        return '{}°{}'', {}°{}'''.format(self.latitude_degree, self.latitude_minute, self.longitude_degree, self.longitude_minute)
 
 class ShipLog(models.Model):
     cruise = models.ForeignKey(
@@ -150,3 +150,21 @@ class ShipLog(models.Model):
 
     def __str__(self):
         return '{:%Y-%m-%d %H:%M:%S}: {} - {} {}'.format(self.timestamp, self.cruise, self.device, self.event)
+
+class Cast(models.Model):
+    deployment = models.ForeignKey(
+        'ShipLog',
+        on_delete=models.CASCADE,
+    )
+    recovery = models.ForeignKey(
+        'ShipLog',
+        on_delete=models.CASCADE,
+    )
+
+class CruiseReport(models.Model):
+    cruise = models.ForeignKey(
+        'Cruise',
+        on_delete=models.CASCADE,
+    )
+    casts = models.ManyToManyField(Cast)
+

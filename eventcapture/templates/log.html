@@ -16,7 +16,7 @@
       <td>{{ entry.timestamp|date:"c" }}</td>
       <td>{{ entry.event }}</td>
       <td>{{ entry.device }}</td>
-      <td>{{ entry.gps.latitude_degree }}, {{ entry.gps.latitude_minute }}, {{ entry.gps.longitude_degree }}, {{ entry.gps.longitude_minute }}</td>
+      <td>{{ entry.gps.latitude_degree }}°{{ entry.gps.latitude_minute }}', {{ entry.gps.longitude_degree }}°{{ entry.gps.longitude_minute }}'</td>
     </tr>
   {% endfor %}
   </tbody>
