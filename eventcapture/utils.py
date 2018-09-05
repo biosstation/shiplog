@@ -1,15 +1,15 @@
 import os
 import pandas as pd
 from django.conf import settings
-from eventcapture.models import Cruise, Device, Event, ShipLog
+from eventcapture.models import Cruise, Device, Event, GPS, ShipLog
 
 def _to_df(log):
-    columns = list(log.values('timestamp', 'device_id', 'event_id'))
+    columns = list(log.values('timestamp', 'device_id', 'event_id', 'gps'))
     df = pd.DataFrame(columns)
-    events = Event.event_dict()
-    devices = Device.device_dict()
+    df['device_id'] = df['device_id'].apply(lambda x: Device.objects.get(pk=x))
+    df['event_id'] = df['event_id'].apply(lambda x: Event.objects.get(pk=x))
+    df['gps'] = df['gps'].apply(lambda x: GPS.objects.get(pk=x))
     df = df.set_index('timestamp')
-    df = df.replace({'device_id': devices, 'event_id': events})
     df = df.rename(columns={'device_id': 'device', 'event_id': 'event'})
     return df
 

@@ -11,10 +11,6 @@ class Event(models.Model):
         unique=True
     )
 
-    @classmethod
-    def event_dict(cls):
-        return {val['id']: val['name'] for val in cls.objects.values()}
-
     def __str__(self):
         return self.name
 
@@ -48,10 +44,6 @@ class Device(models.Model):
                 break
             lineage.insert(0, device)
         return lineage
-
-    @classmethod
-    def device_dict(cls):
-        return {val['id']: val['name'] for val in cls.objects.values()}
 
     def __str__(self):
         return self.name
@@ -133,12 +125,26 @@ class ShipLog(models.Model):
     timestamp = models.DateTimeField()
 
     @classmethod
+    def find_deployment(cls, recovery):
+        """Given a recover event, find the related deploy event"""
+        same_cruise = models.Q(cruise=recovery.cruise)
+        same_device = models.Q(device=recovery.device)
+        deploy_event = models.Q(event__name='Deploy')
+        deployments = cls.objects.filter(same_cruise & same_device & deploy_event)
+        deployment = deployments.order_by('timestamp').last()
+        return deployment
+
+    @classmethod
     def log_entry(cls, cruise, device, event):
         gps = GPS()
         gps.save()
         right_now = datetime.now(pytz.utc)
         shiplog = cls(cruise=cruise, device=device, event=event, gps=gps, timestamp=right_now)
         shiplog.save()
+        if event.name == 'Recover':
+            deployment = cls.find_deployment(shiplog)
+            cast = Cast(deployment=deployment, recovery=shiplog)
+            cast.save()
 
     @classmethod
     def get_log(cls, cruise_id):
@@ -155,16 +161,14 @@ class Cast(models.Model):
     deployment = models.ForeignKey(
         'ShipLog',
         on_delete=models.CASCADE,
+        related_name='deploy_event',
     )
     recovery = models.ForeignKey(
         'ShipLog',
         on_delete=models.CASCADE,
+        related_name='recover_event',
     )
 
-class CruiseReport(models.Model):
-    cruise = models.ForeignKey(
-        'Cruise',
-        on_delete=models.CASCADE,
-    )
-    casts = models.ManyToManyField(Cast)
+    def __str__(self):
+        return '{cruise} {device} cast recovered at {ts:%H:%M} on {ts:%Y-%m-%d}'.format(cruise=self.recovery.cruise.name, device=self.recovery.device.name, ts=self.recovery.timestamp)
 
