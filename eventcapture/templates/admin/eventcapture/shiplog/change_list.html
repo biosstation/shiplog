@@ -3,7 +3,7 @@
 
 {% block object-tools-items %}
   <li>
-    <a href="{% url 'download' cruise_id=cruise_id %}">
+    <a href="{% url 'download' log='eventlog' cruise_id=cruise_id %}">
       {% blocktrans with cl.opts.verbose_name as name %}Download{% endblocktrans %}
     </a>
   </li>
