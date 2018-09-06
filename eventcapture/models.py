@@ -61,18 +61,16 @@ class Wire(models.Model):
 class Config(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     wire = models.ForeignKey(Wire, on_delete=models.CASCADE, null=True, blank=True)
-    WINCH_CHOICES = (
-        (0, ''),
-        (1, '1'),
-        (2, '2'),
-        (3, '3'),
-    )
-    winch = models.IntegerField(choices=WINCH_CHOICES)
+    winch = models.IntegerField(choices=settings.WINCH_CHOICES)
 
     def __str__(self):
+        winch = 'not on a winch'
+        wire = 'not on a wire'
         if self.winch:
-            return '{} on winch #{}'.format(self.device, self.winch)
-        return '{} not on a winch'.format(self.device)
+            winch = 'on winch #{}'.format(self.winch)
+        if self.wire:
+            wire = 'on wire {}'.format(self.wire.serial_number)
+        return '{} {} {}'.format(self.device, winch, wire)
 
 class Cruise(models.Model):
     start_date = models.DateTimeField()
@@ -201,7 +199,7 @@ class ShipLog(models.Model):
         df = df.set_index('timestamp')
         df = df.rename(columns={'device_id': 'device', 'event_id': 'event'})
         return df
-    
+
     def __str__(self):
         return '{:%Y-%m-%d %H:%M:%S}: {} - {} {}'.format(self.timestamp, self.cruise, self.device, self.event)
 
@@ -209,12 +207,15 @@ class CastReport(models.Model):
     max_tension = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True, default=None)
     max_payout = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True, default=None)
     max_speed = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True, default=None)
+    wire = models.ForeignKey(Wire, on_delete=models.CASCADE, null=True, blank=True)
+    winch_number = models.IntegerField(choices=settings.WINCH_CHOICES, default=None)
 
     def get_winch_data(self, cast):
         deploy_date = cast.deployment.timestamp.date()
         recover_date = cast.recovery.timestamp.date()
         device_id = cast.recovery.device.id
         winch_number = cast.recovery.cruise.config.get(device__id=device_id).winch
+        self.winch_number = winch_number
 
         # TODO: put some of these in settings
         winch_cols = [2, 3, 4]
@@ -240,16 +241,17 @@ class CastReport(models.Model):
         recover_time = cast.recovery.timestamp
         return winch_data[((deploy_time <= winch_data['Date']) & (winch_data['Date'] <= recover_time))]
 
-    def set_cast_report(self, df):
+    def set_cast_report(self, df, cast):
         if df and not df.empty:
             self.max_tension = df['Tension'].max() # in lbs
             self.max_payout = df['Payout'].max()  # in meters
             self.max_speed = df['Speed'].max()   # in meters per minute
+        self.wire = cast.recovery.cruise.config.get(device__id=cast.recovery.device.id).wire
 
     def save(self, *args, **kwargs):
         cast = kwargs.get('cast')
         df = self.get_winch_data(cast)
-        self.set_cast_report(df)
+        self.set_cast_report(df, cast)
         super().save()
 
 class Cast(models.Model):
@@ -271,7 +273,7 @@ class Cast(models.Model):
         'CastReport',
         on_delete=models.CASCADE,
     )
-    
+
     @classmethod
     def _to_df(cls, log):
         columns = list(log.values('deployment', 'recovery', 'cast_report'))
@@ -282,9 +284,11 @@ class Cast(models.Model):
         df['Max Tension'] = df['cast_report'].apply(lambda x: CastReport.objects.get(pk=x).max_tension)
         df['Max Speed'] = df['cast_report'].apply(lambda x: CastReport.objects.get(pk=x).max_tension)
         df['Max Payout'] = df['cast_report'].apply(lambda x: CastReport.objects.get(pk=x).max_tension)
+        df['Wire'] = df['cast_report'].apply(lambda x: CastReport.objects.get(pk=x).wire.serial_number)
+        df['Winch #'] = df['cast_report'].apply(lambda x: CastReport.objects.get(pk=x).winch_number)
         df = df.drop(['cast_report', 'deployment', 'recovery'], axis=1)
         return df
-    
+
     @classmethod
     def get_log(cls, cruise_id):
         return cls.objects.filter(cruise_id=cruise_id)
@@ -299,3 +303,6 @@ class Cast(models.Model):
     def __str__(self):
         return '{cruise} {device} cast recovered at {ts:%H:%M} on {ts:%Y-%m-%d}'.format(cruise=self.recovery.cruise.name, device=self.recovery.device.name, ts=self.recovery.timestamp)
 
+class WireReport(models.Model):
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()

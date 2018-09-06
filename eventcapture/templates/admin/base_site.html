@@ -8,7 +8,9 @@
 <h1 id="site-name">
     <a href="{% url 'admin:index' %}">Welcome to the ShipLog Admin Panel</a>
     {% if cruise %}
-    <b><span style="color:lime;padding-left:25px">{{ cruise.name }}</span></b>
+    <b><span style="color:lime;padding-left:25px">
+        <a href="/admin/eventcapture/cruise/{{ cruise.id }}/change/">{{ cruise.name }}</a>
+    </span></b>
     {% else %}
     <b><span style="color:tomato;padding-left:25px">Not Cruising</span></b>
     {% endif %}
