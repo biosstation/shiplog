@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+
+{% load staticfiles %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">Welcome to the ShipLog Admin Panel</a>
+    {% if cruise %}
+    <b><span style="color:lime;padding-left:25px">{{ cruise.name }}</span></b>
+    {% else %}
+    <b><span style="color:tomato;padding-left:25px">Not Cruising</span></b>
+    {% endif %}
+</h1>
+{% endblock %}

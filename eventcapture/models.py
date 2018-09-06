@@ -91,7 +91,16 @@ class Cruise(models.Model):
     )
 
     def __str__(self):
-        return '{} ({})'.format(self.name, self.number)
+        ended = 'ENDED' if self.has_cruise_ended() else 'FUTURE' if self.has_cruise_started() else 'ACTIVE'
+        return '{} - {} ({})'.format(ended, self.name, self.number)
+
+    def has_cruise_ended(self):
+        right_now = datetime.now(pytz.utc)
+        return self.end_date is not None and self.end_date < right_now
+
+    def has_cruise_started(self):
+        right_now = datetime.now(pytz.utc)
+        return self.start_date is not None and self.start_date > right_now
 
     @classmethod
     def get_active_cruise(cls):

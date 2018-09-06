@@ -1,6 +1,7 @@
 import pytz
 from datetime import datetime
 from django import forms
+from django.http import HttpResponseRedirect
 from django.contrib import admin
 from .models import Cruise, Device, Event, ShipLog, Cast, CastReport, Wire, Config
 
@@ -64,10 +65,32 @@ class ShipLogAdmin(admin.ModelAdmin):
 class CruiseForm(forms.ModelForm):
     class Meta:
         model = Cruise
-        exclude = []
+        exclude = ['end_date']
 
 class CruiseAdmin(admin.ModelAdmin):
     form = CruiseForm
+    change_form_template = None
+    readonly_fields = ['end_date']
+
+    def get_form(self, request, obj=None, **kwargs):
+        self.change_form_template = None
+        self.readonly_fields = ['end_date']
+        if obj is None:
+            return super().get_form(request, obj, **kwargs)
+        if not obj.has_cruise_ended():
+            self.change_form_template = 'admin/eventcapture/cruise/end_cruise_change_form.html'
+        else:
+            self.readonly_fields = ['start_date', 'end_date', 'name', 'number', 'config']
+        return super().get_form(request, obj, **kwargs)
+
+    def response_change(self, request, obj):
+        if "end_cruise" in request.POST:
+            obj.end_date = datetime.now(pytz.utc)
+            obj.save()
+            self.message_user(request, "This cruise is now over")
+            return HttpResponseRedirect(".")
+        return super().response_change(request, obj)
+
 
 admin.site.register(Device)
 admin.site.register(Event)
