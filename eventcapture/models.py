@@ -105,24 +105,27 @@ class Cruise(models.Model):
         return cruises.first()
 
 class GPS(models.Model):
-    latitude_degree = models.IntegerField()
-    longitude_degree = models.IntegerField()
-    latitude_minute = models.DecimalField(max_digits=8, decimal_places=4)
-    longitude_minute = models.DecimalField(max_digits=8, decimal_places=4)
+    latitude_degree = models.IntegerField(default=0)
+    longitude_degree = models.IntegerField(default=0)
+    latitude_minute = models.DecimalField(max_digits=8, decimal_places=4, default=0)
+    longitude_minute = models.DecimalField(max_digits=8, decimal_places=4, default=0)
 
     def save(self, *args, **kwargs):
         df = self._read_gps_file()
-        gps = self._get_latest_gps_record(df)
-        self.latitude_degree = gps.iloc[0]['Lat_deg']
-        self.longitude_degree = gps.iloc[0]['Lon_deg']
-        self.latitude_minute = gps.iloc[0]['Lat_min']
-        self.longitude_minute = gps.iloc[0]['Lon_min']
+        if df: # silently not capturing GPS data if we can't find the file
+            gps = self._get_latest_gps_record(df)
+            self.latitude_degree = gps.iloc[0]['Lat_deg']
+            self.longitude_degree = gps.iloc[0]['Lon_deg']
+            self.latitude_minute = gps.iloc[0]['Lat_min']
+            self.longitude_minute = gps.iloc[0]['Lon_min']
         super().save(*args, **kwargs)
 
     def _read_gps_file(self):
         dtype = {'Lat_deg':int, 'Lat_min':float, 'Lon_deg':int, 'Lon_min':float}
-        df = pd.read_csv(settings.GPS_FILENAME, skiprows=[0, 2, 3], usecols=dtype.keys(), header=0, dtype=dtype)
-        return df
+        gps_file = settings.GPS_FILENAME
+        if os.path.isfile(gps_file):
+            return pd.read_csv(gps_file, skiprows=[0, 2, 3], usecols=dtype.keys(), header=0, dtype=dtype)
+        return None
 
     def _get_latest_gps_record(self, df):
         return df.tail(1)
@@ -203,7 +206,7 @@ class CastReport(models.Model):
         recover_date = cast.recovery.timestamp.date()
         device_id = cast.recovery.device.id
         winch_number = cast.recovery.cruise.config.get(device__id=device_id).winch
-        
+
         # TODO: put some of these in settings
         winch_cols = [2, 3, 4]
         usecols = [0, 1]
@@ -212,20 +215,24 @@ class CastReport(models.Model):
         skiprows = [0, 1, 2, 3, 4, 5, 6, 7, 9]
         winch_data = []
         for f in glob(settings.WINCH_DATAFILE_PATH):
+            if not os.path.isfile(f):
+                continue
             winch_date = datetime.strptime(ntpath.basename(f), '%Y-%m-%d %H-%M-%S WinchDAC.csv').date()
             if deploy_date <= winch_date and winch_date <= recover_date:
                 df = pd.read_csv(f, skiprows=skiprows, usecols=usecols)
                 df['Clock'] = pd.to_datetime(df['Clock'], format='%m/%d/%Y %I:%M:%S %p', utc=True)
                 df.columns = names
                 winch_data.append(df)
-        winch_data = pd.concat(winch_data)
+        try:
+            winch_data = pd.concat(winch_data)
+        except ValueError:
+            return None # winch data was not found
         deploy_time = cast.deployment.timestamp
         recover_time = cast.recovery.timestamp
-        cast_winch_data = winch_data[((deploy_time <= winch_data['Date']) & (winch_data['Date'] <= recover_time))]
-        return cast_winch_data 
+        return winch_data[((deploy_time <= winch_data['Date']) & (winch_data['Date'] <= recover_time))]
 
     def set_cast_report(self, df):
-        if not df.empty:
+        if df and not df.empty:
             self.max_tension = df['Tension'].max() # in lbs
             self.max_payout = df['Payout'].max()  # in meters
             self.max_speed = df['Speed'].max()   # in meters per minute
@@ -235,7 +242,7 @@ class CastReport(models.Model):
         df = self.get_winch_data(cast)
         self.set_cast_report(df)
         super().save()
-    
+
 class Cast(models.Model):
     cruise = models.ForeignKey(
         'Cruise',
