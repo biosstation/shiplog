@@ -96,8 +96,6 @@ admin.site.register(Device)
 admin.site.register(Event)
 admin.site.register(Cruise, CruiseAdmin)
 admin.site.register(ShipLog, ShipLogAdmin)
-admin.site.register(Cast)
-admin.site.register(CastReport)
 admin.site.register(Wire)
 admin.site.register(Config)
 
