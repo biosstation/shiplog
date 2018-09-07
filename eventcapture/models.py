@@ -130,10 +130,10 @@ class GPS(models.Model):
         super().save(*args, **kwargs)
 
     def _read_gps_file(self):
-        dtype = {'Lat_deg':int, 'Lat_min':float, 'Lon_deg':int, 'Lon_min':float}
+        dtype = {'Lat_deg':float, 'Lat_min':float, 'Lon_deg':float, 'Lon_min':float}
         gps_file = settings.GPS_FILENAME
         if os.path.isfile(gps_file):
-            return pd.read_csv(gps_file, skiprows=[0, 2, 3], usecols=dtype.keys(), header=0, dtype=dtype)
+            return pd.read_csv(gps_file, skiprows=[0, 2, 3], usecols=dtype.keys(), header=0, dtype=dtype, na_values=['NAN'])
         return None
 
     def _get_latest_gps_record(self, df):
