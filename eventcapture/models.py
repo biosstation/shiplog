@@ -3,7 +3,7 @@ import pytz
 import ntpath
 import pandas as pd
 from glob import glob
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.db import models
 from django.conf import settings
 
@@ -304,5 +304,26 @@ class Cast(models.Model):
         return '{cruise} {device} cast recovered at {ts:%H:%M} on {ts:%Y-%m-%d}'.format(cruise=self.recovery.cruise.name, device=self.recovery.device.name, ts=self.recovery.timestamp)
 
 class WireReport(models.Model):
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    start_date = models.DateField()
+    end_date = models.DateField()
+    wire = models.ForeignKey(Wire, on_delete=models.CASCADE, default=None)
+
+    def get_relevant_casts(self):
+        start_date = self.start_date
+        end_date = self.end_date
+        end_date += timedelta(days=1)  # increment day to get casts through the end of the day
+
+        # query criteria
+        deployments_after = models.Q(deployment__timestamp__gte=start_date)
+        recoveries_before = models.Q(recovery__timestamp__lte=end_date)
+        specific_wire = models.Q(cast_report__wire__serial_number=self.wire.serial_number)
+
+        # query and pull out casts reports
+        casts = Cast.objects.filter(deployments_after & recoveries_before & specific_wire)
+        return casts
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return 'Wire Report for {} from {} to {}'.format(self.wire.serial_number, self.start_date, self.end_date)

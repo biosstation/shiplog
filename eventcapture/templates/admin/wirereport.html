@@ -1,0 +1,30 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div class="text-center mt-3 mb-3">
+    <h1>Wire Report for {{ wire.serial_number }}</h1>
+</div>
+<p>{{ start_date }} to {{ end_date }}</p>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <td>Drop #</td>
+      <td>Date</td>
+      <td>Max Tension</td>
+      <td>Max Speed</td>
+      <td>Max Payout</td>
+    </tr>
+  </thead>
+  <tbody>
+  {% for cast in casts %}
+    <tr>
+      <td>{{ forloop.counter }}</td>
+      <td>{{ cast.recovery.timestamp }}</td>
+      <td>{{ cast.cast_report.max_tension }}</td>
+      <td>{{ cast.cast_report.max_speed }}</td>
+      <td>{{ cast.cast_report.max_payout }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<a href="/admin/eventcapture/wirereport">Back to Wire Report</a>
+{% endblock %}

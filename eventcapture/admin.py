@@ -3,7 +3,8 @@ from datetime import datetime
 from django import forms
 from django.http import HttpResponseRedirect
 from django.contrib import admin
-from .models import Cruise, Device, Event, ShipLog, Cast, CastReport, Wire, Config
+from django.shortcuts import render
+from .models import Cruise, Device, Event, ShipLog, WireReport, Wire, Config
 
 admin.site.site_header = 'ShipLog Admin Site'
 admin.site.index_title = 'ShipLog administration'
@@ -91,11 +92,28 @@ class CruiseAdmin(admin.ModelAdmin):
             return HttpResponseRedirect(".")
         return super().response_change(request, obj)
 
+class WireReportAdmin(admin.ModelAdmin):
+
+    def response_add(self, request, obj):
+        return self.view_wire_report(request, obj)
+
+    def response_change(self, request, obj):
+        return self.view_wire_report(request, obj)
+
+    def view_wire_report(self, request, obj):
+        if "run_wire_report" in request.POST:
+            context = {}
+            context['casts'] = obj.get_relevant_casts()
+            context['wire'] = obj.wire
+            context['start_date'] = obj.start_date
+            context['end_date'] = obj.end_date
+            return render(request, 'admin/wirereport.html', context)
 
 admin.site.register(Device)
 admin.site.register(Event)
 admin.site.register(Cruise, CruiseAdmin)
 admin.site.register(ShipLog, ShipLogAdmin)
-admin.site.register(Wire)
 admin.site.register(Config)
+admin.site.register(Wire)
+admin.site.register(WireReport, WireReportAdmin)
 
