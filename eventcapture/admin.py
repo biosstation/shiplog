@@ -57,6 +57,14 @@ class ShipLogAdmin(admin.ModelAdmin):
     form = ShipLogForm
     list_display = ('timestamp', 'event', 'device', 'cruise', )
     list_filter = (CruiseListFilter, )
+    
+    def get_form(self, request, obj=None, **kwargs):
+        self.readonly_fields = ['end_date']
+        if obj is None:
+            return super().get_form(request, obj, **kwargs)
+        if obj.cruise.has_cruise_ended():
+            self.readonly_fields = ['cruise', 'device', 'event', 'gps', 'timestamp']
+        return super().get_form(request, obj, **kwargs)
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}

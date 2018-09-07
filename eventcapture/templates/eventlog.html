@@ -9,13 +9,27 @@
     </form>
 </div>
 <table class="table table-striped">
+  <thead>
+    <tr>
+      <td>Date</td>
+      <td>Time</td>
+      <td>Timezone</td>
+      <td>Event</td>
+      <td>Device</td>
+      <td>Latitude</td>
+      <td>Longitude</td>
+    </tr>
+  </thead>
   <tbody>
   {% for entry in log %}
     <tr>
-      <td>{{ entry.timestamp|date:"c" }}</td>
+      <td>{{ entry.timestamp|date:"Y-m-d" }}</td>
+      <td>{{ entry.timestamp|date:"g:i:s a" }}</td>
+      <td>{{ entry.timestamp|date:"T" }}</td>
       <td>{{ entry.event }}</td>
       <td>{{ entry.device }}</td>
-      <td>{{ entry.gps.latitude_degree }}°{{ entry.gps.latitude_minute }}', {{ entry.gps.longitude_degree }}°{{ entry.gps.longitude_minute }}'</td>
+      <td>{{ entry.gps.latitude_degree }}°{{ entry.gps.latitude_minute }}'</td>
+      <td>{{ entry.gps.longitude_degree }}°{{ entry.gps.longitude_minute }}'</td>
     </tr>
   {% endfor %}
   </tbody>

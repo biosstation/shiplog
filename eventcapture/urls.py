@@ -7,5 +7,5 @@ urlpatterns = [
     url(r'^event/(?P<device_id>[0-9]+)/$', views.event, name='event'),
     url(r'^download/(?P<log>[a-z]+)/(?P<cruise_id>[0-9]+)/$', views.download, name='download'),
     url(r'^eventlog/$', views.eventlog, name='eventlog'),
-    url(r'^castlog/$', views.castlog, name='castlog'),
+    url(r'^wirelog/$', views.wirelog, name='wirelog'),
 ]

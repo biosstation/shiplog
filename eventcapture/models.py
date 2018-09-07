@@ -119,12 +119,14 @@ class GPS(models.Model):
 
     def save(self, *args, **kwargs):
         df = self._read_gps_file()
-        if df: # silently not capturing GPS data if we can't find the file
+        try:
             gps = self._get_latest_gps_record(df)
             self.latitude_degree = gps.iloc[0]['Lat_deg']
             self.longitude_degree = gps.iloc[0]['Lon_deg']
             self.latitude_minute = gps.iloc[0]['Lat_min']
             self.longitude_minute = gps.iloc[0]['Lon_min']
+        except AttributeError:
+            pass
         super().save(*args, **kwargs)
 
     def _read_gps_file(self):
@@ -216,6 +218,8 @@ class CastReport(models.Model):
         device_id = cast.recovery.device.id
         winch_number = cast.recovery.cruise.config.get(device__id=device_id).winch
         self.winch_number = winch_number
+        if not winch_number:
+            return
 
         # TODO: put some of these in settings
         winch_cols = [2, 3, 4]
@@ -242,10 +246,13 @@ class CastReport(models.Model):
         return winch_data[((deploy_time <= winch_data['Date']) & (winch_data['Date'] <= recover_time))]
 
     def set_cast_report(self, df, cast):
-        if df and not df.empty:
-            self.max_tension = df['Tension'].max() # in lbs
-            self.max_payout = df['Payout'].max()  # in meters
-            self.max_speed = df['Speed'].max()   # in meters per minute
+        try:
+            if not df.empty:
+                self.max_tension = df['Tension'].max() # in lbs
+                self.max_payout = df['Payout'].max()  # in meters
+                self.max_speed = df['Speed'].max()   # in meters per minute
+        except AttributeError:
+            pass
         self.wire = cast.recovery.cruise.config.get(device__id=cast.recovery.device.id).wire
 
     def save(self, *args, **kwargs):

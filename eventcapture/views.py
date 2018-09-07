@@ -46,8 +46,8 @@ def event(request, device_id):
 def download(request, log, cruise_id):
     if log == 'eventlog':
         csv_path = utils.to_csv(ShipLog, cruise_id, settings.EVENT_LOG_FILENAME)
-    elif log == 'castlog':
-        csv_path = utils.to_csv(Cast, cruise_id, settings.CAST_LOG_FILENAME)
+    elif log == 'wirelog':
+        csv_path = utils.to_csv(Cast, cruise_id, settings.WIRE_LOG_FILENAME)
     else:
         raise ValueError('Unknown log type')
     with open(csv_path, 'rb') as f:
@@ -67,15 +67,15 @@ def eventlog(request):
     if action == 'download':
         return HttpResponseRedirect(reverse('download', args=['eventlog', cruise.id]))
 
-def castlog(request):
+def wirelog(request):
     cruise = Cruise.get_active_cruise()
     if not cruise:
-        return render(request, 'castlog.html')
+        return render(request, 'wirelog.html')
     context = {}
     context['log'] = Cast.get_log(cruise)
     if request.method != 'POST':
-        return render(request, 'castlog.html', context)
+        return render(request, 'wirelog.html', context)
     action = request.POST.get('action', None)
     if action == 'download':
-        return HttpResponseRedirect(reverse('download', args=['castlog', cruise.id]))
+        return HttpResponseRedirect(reverse('download', args=['wirelog', cruise.id]))
 

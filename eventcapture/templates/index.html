@@ -21,7 +21,12 @@ $(function() {
         content: {% include 'success.html' %},
         style: "toast",
         timeout: 5000, // time in milliseconds
-        htmlAllowed: true
+        htmlAllowed: true,
+        onClose: function(){
+            // completely remove snackbar from DOM
+            var child = document.getElementById('snackbar-container');
+            child.parentNode.removeChild(child)
+        }
     }
     $.snackbar(options);
 });
