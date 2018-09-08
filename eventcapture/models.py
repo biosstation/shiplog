@@ -1,6 +1,7 @@
 import os
 import pytz
 import ntpath
+import numpy as np
 import pandas as pd
 from glob import glob
 from datetime import datetime, timedelta
@@ -161,26 +162,24 @@ class ShipLog(models.Model):
     )
     timestamp = models.DateTimeField()
 
-    @classmethod
-    def find_deployment(cls, recovery):
+    def find_deployment(self):
         """Given a recover event, find the related deploy event"""
-        same_cruise = models.Q(cruise=recovery.cruise)
-        same_device = models.Q(device=recovery.device)
+        same_cruise = models.Q(cruise=self.cruise)
+        same_device = models.Q(device=self.device)
         deploy_event = models.Q(event__name='Deploy')
-        deployments = cls.objects.filter(same_cruise & same_device & deploy_event)
+        deployments = ShipLog.objects.filter(same_cruise & same_device & deploy_event)
         deployment = deployments.order_by('timestamp').last()
         return deployment
 
-    @classmethod
-    def log_entry(cls, cruise, device, event):
+    def save(self, *args, **kwargs):
         gps = GPS()
         gps.save()
-        right_now = datetime.now(pytz.utc)
-        shiplog = cls(cruise=cruise, device=device, event=event, gps=gps, timestamp=right_now)
-        shiplog.save()
-        if event.name == 'Recover':
-            deployment = cls.find_deployment(shiplog)
-            cast = Cast(deployment=deployment, recovery=shiplog)
+        self.gps = gps
+        self.timestamp = datetime.now(pytz.utc)
+        super().save(*args, **kwargs)
+        if self.event.name == 'Recover':
+            deployment = self.find_deployment()
+            cast = Cast(deployment=deployment, recovery=self)
             cast.save()
 
     @classmethod
@@ -206,20 +205,25 @@ class ShipLog(models.Model):
         return '{:%Y-%m-%d %H:%M:%S}: {} - {} {}'.format(self.timestamp, self.cruise, self.device, self.event)
 
 class CastReport(models.Model):
+    cast = models.ForeignKey('Cast', on_delete=models.CASCADE, null=True)
     max_tension = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True, default=None)
     max_payout = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True, default=None)
     max_speed = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True, default=None)
     wire = models.ForeignKey(Wire, on_delete=models.CASCADE, null=True, blank=True)
     winch_number = models.IntegerField(choices=settings.WINCH_CHOICES, default=None)
 
-    def get_winch_data(self, cast):
-        deploy_date = cast.deployment.timestamp.date()
-        recover_date = cast.recovery.timestamp.date()
-        device_id = cast.recovery.device.id
-        winch_number = cast.recovery.cruise.config.get(device__id=device_id).winch
+    @classmethod
+    def get_log(cls, cruise_id):
+        return cls.objects.filter(cast__cruise_id=cruise_id)
+
+    def get_winch_data(self):
+        deploy_date = self.cast.deployment.timestamp.date()
+        recover_date = self.cast.recovery.timestamp.date()
+        device_id = self.cast.recovery.device.id
+        winch_number = self.cast.recovery.cruise.config.get(device__id=device_id).winch
         self.winch_number = winch_number
         if not winch_number:
-            return
+            return None
 
         # TODO: put some of these in settings
         winch_cols = [2, 3, 4]
@@ -234,18 +238,24 @@ class CastReport(models.Model):
             winch_date = datetime.strptime(ntpath.basename(f), '%Y-%m-%d %H-%M-%S WinchDAC.csv').date()
             if deploy_date <= winch_date and winch_date <= recover_date:
                 df = pd.read_csv(f, skiprows=skiprows, usecols=usecols)
-                df['Clock'] = pd.to_datetime(df['Clock'], format='%m/%d/%Y %I:%M:%S %p', utc=True)
+                df['Clock'] = pd.to_datetime(df['Clock'], format='%m/%d/%Y %I:%M:%S %p')
                 df.columns = names
+                df = df.set_index('Date')
                 winch_data.append(df)
         try:
-            winch_data = pd.concat(winch_data)
+            df = pd.concat(winch_data)
+            df = df.tz_localize(tz='UTC')
         except ValueError:
             return None # winch data was not found
-        deploy_time = cast.deployment.timestamp
-        recover_time = cast.recovery.timestamp
-        return winch_data[((deploy_time <= winch_data['Date']) & (winch_data['Date'] <= recover_time))]
+        return df
 
-    def set_cast_report(self, df, cast):
+    def subset_winch_data(self, df):
+        deploy_time = self.cast.deployment.timestamp
+        recover_time = self.cast.recovery.timestamp
+        subset = df[(deploy_time <= df.index) & (df.index <= recover_time)]
+        return subset
+
+    def set_cast_report(self, df):
         try:
             if not df.empty:
                 self.max_tension = df['Tension'].max() # in lbs
@@ -253,13 +263,14 @@ class CastReport(models.Model):
                 self.max_speed = df['Speed'].max()   # in meters per minute
         except AttributeError:
             pass
-        self.wire = cast.recovery.cruise.config.get(device__id=cast.recovery.device.id).wire
 
     def save(self, *args, **kwargs):
-        cast = kwargs.get('cast')
-        df = self.get_winch_data(cast)
-        self.set_cast_report(df, cast)
-        super().save()
+        self.wire = self.cast.recovery.cruise.config.get(device__id=self.cast.recovery.device.id).wire
+        df = self.get_winch_data()
+        df = self.subset_winch_data(df)
+        self.set_cast_report(df)
+        super().save(*args, **kwargs)
+
 
 class Cast(models.Model):
     cruise = models.ForeignKey(
@@ -275,10 +286,6 @@ class Cast(models.Model):
         'ShipLog',
         on_delete=models.CASCADE,
         related_name='recover_event',
-    )
-    cast_report = models.ForeignKey(
-        'CastReport',
-        on_delete=models.CASCADE,
     )
 
     @classmethod
@@ -301,11 +308,10 @@ class Cast(models.Model):
         return cls.objects.filter(cruise_id=cruise_id)
 
     def save(self, *args, **kwargs):
-        cast_report = CastReport()
-        cast_report.save(cast=self)
-        self.cast_report = cast_report
         self.cruise = self.recovery.cruise
         super().save(*args, **kwargs)
+        cast_report = CastReport(cast=self)
+        cast_report.save()
 
     def __str__(self):
         return '{cruise} {device} cast recovered at {ts:%H:%M} on {ts:%Y-%m-%d}'.format(cruise=self.recovery.cruise.name, device=self.recovery.device.name, ts=self.recovery.timestamp)

@@ -4,7 +4,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from django.conf import settings
 from eventcapture import utils
-from eventcapture.models import Cruise, Device, Event, ShipLog, Cast
+from eventcapture.models import Cruise, Device, Event, ShipLog, Cast, CastReport
 
 def index(request):
     if request.method != 'POST':
@@ -17,7 +17,8 @@ def index(request):
     cruise = Cruise.objects.get(pk=int(cruise_id))
     device = Device.objects.get(pk=int(device_id))
     event = Event.objects.get(pk=int(event_id))
-    ShipLog.log_entry(cruise, device, event)
+    shiplog = ShipLog(cruise=cruise, device=device, event=event)
+    shiplog.save()
     context = {
         'success': True,
         'device': device,
@@ -72,7 +73,7 @@ def wirelog(request):
     if not cruise:
         return render(request, 'wirelog.html')
     context = {}
-    context['log'] = Cast.get_log(cruise)
+    context['log'] = CastReport.get_log(cruise)
     if request.method != 'POST':
         return render(request, 'wirelog.html', context)
     action = request.POST.get('action', None)
