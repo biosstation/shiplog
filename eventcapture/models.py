@@ -240,19 +240,19 @@ class CastReport(models.Model):
                 df = pd.read_csv(f, skiprows=skiprows, usecols=usecols)
                 df['Clock'] = pd.to_datetime(df['Clock'], format='%m/%d/%Y %I:%M:%S %p')
                 df.columns = names
-                df = df.set_index('Date')
+                #df = df.set_index('Date')
                 winch_data.append(df)
         try:
             df = pd.concat(winch_data)
-            df = df.tz_localize(tz='UTC')
+            #df = df.tz_localize(tz='UTC')
         except ValueError:
             return None # winch data was not found
         return df
 
     def subset_winch_data(self, df):
-        deploy_time = self.cast.deployment.timestamp
-        recover_time = self.cast.recovery.timestamp
-        subset = df[(deploy_time <= df.index) & (df.index <= recover_time)]
+        deploy_time = self.cast.deployment.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        recover_time= self.cast.recovery.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        subset = df[(deploy_time <= df['Date']) & (df['Date'] <= recover_time)]
         return subset
 
     def set_cast_report(self, df):
