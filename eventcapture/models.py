@@ -196,9 +196,13 @@ class ShipLog(models.Model):
         df = pd.DataFrame(columns)
         df['device_id'] = df['device_id'].apply(lambda x: Device.objects.get(pk=x))
         df['event_id'] = df['event_id'].apply(lambda x: Event.objects.get(pk=x))
-        df['gps'] = df['gps'].apply(lambda x: GPS.objects.get(pk=x))
-        df = df.set_index('timestamp')
-        df = df.rename(columns={'device_id': 'device', 'event_id': 'event'})
+        df['Latitude'] = df['gps'].apply(lambda x: "{}°{}'".format(GPS.objects.get(pk=x).latitude_degree, GPS.objects.get(pk=x).latitude_minute))
+        df['Longitude'] = df['gps'].apply(lambda x: "{}°{}'".format(GPS.objects.get(pk=x).longitude_degree, GPS.objects.get(pk=x).longitude_minute))
+        df['Date'] = df['timestamp'].dt.strftime('%Y-%m-%d')
+        df['Time'] = df['timestamp'].dt.strftime('%H:%M:%S')
+        df = df.drop(['timestamp', 'gps'], axis=1)
+        df = df.rename(columns={'device_id': 'Device', 'event_id': 'Event'})
+        df = df[['Date', 'Time', 'Device', 'Event', 'Latitude', 'Longitude']]  # reorder columns
         return df
 
     def __str__(self):
@@ -214,7 +218,9 @@ class CastReport(models.Model):
 
     @classmethod
     def get_log(cls, cruise_id):
-        return cls.objects.filter(cast__cruise_id=cruise_id)
+        has_winch_number = models.Q(winch_number__gt=0)
+        this_cruise = models.Q(cast__cruise_id=cruise_id)
+        return cls.objects.filter(has_winch_number & this_cruise)
 
     def get_winch_data(self):
         deploy_date = self.cast.deployment.timestamp.date()
@@ -257,17 +263,17 @@ class CastReport(models.Model):
 
     def set_cast_report(self, df):
         try:
+            df = self.subset_winch_data(df)
             if not df.empty:
                 self.max_tension = df['Tension'].max() # in lbs
                 self.max_payout = df['Payout'].max()  # in meters
                 self.max_speed = df['Speed'].max()   # in meters per minute
-        except AttributeError:
+        except (AttributeError, TypeError):
             pass
 
     def save(self, *args, **kwargs):
         self.wire = self.cast.recovery.cruise.config.get(device__id=self.cast.recovery.device.id).wire
         df = self.get_winch_data()
-        df = self.subset_winch_data(df)
         self.set_cast_report(df)
         super().save(*args, **kwargs)
 
