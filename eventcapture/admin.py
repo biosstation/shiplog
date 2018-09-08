@@ -57,7 +57,7 @@ class ShipLogAdmin(admin.ModelAdmin):
     form = ShipLogForm
     list_display = ('timestamp', 'event', 'device', 'cruise', )
     list_filter = (CruiseListFilter, )
-    
+
     def get_form(self, request, obj=None, **kwargs):
         self.readonly_fields = ['end_date']
         if obj is None:
@@ -74,7 +74,7 @@ class ShipLogAdmin(admin.ModelAdmin):
 class CruiseForm(forms.ModelForm):
     class Meta:
         model = Cruise
-        exclude = ['end_date']
+        exclude = ['end_date', 'parent_devices']
 
 class CruiseAdmin(admin.ModelAdmin):
     form = CruiseForm
