@@ -4,8 +4,8 @@
 {% include 'lineage.html' %}
 <h3>Please choose a device:</h3>
 <div class="btn-group-vertical w-100">
-    {% for device in cruise.parent_devices.all %}
-    <a href="{% url 'device' device_id=device.id %}" class="btn btn-primary btn-block btn-xlarge">{{ device.name }}</a>
+    {% for config in cruise.config.all %}
+    <a href="{% url 'device' device_id=config.device.id %}" class="btn btn-primary btn-block btn-xlarge">{{ config.device.name }}</a>
     {% endfor %}
 </div>
 {% else %}

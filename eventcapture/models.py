@@ -92,10 +92,6 @@ class Cruise(models.Model):
         Config,
         default=None,
     )
-    parent_devices = models.ManyToManyField(
-        Device,
-        null=True,
-    )
 
     def __str__(self):
         ended = 'ENDED' if self.has_cruise_ended() else 'FUTURE' if self.has_cruise_started() else 'ACTIVE'
@@ -120,7 +116,8 @@ class Cruise(models.Model):
             raise ValueError('Overlapping cruises not allowed')
         return cruises.first()
 
-    def set_parent_devices(self):
+    def get_parent_devices(self):
+        """UNUSED: Unique list of highest-level parents devices"""
         no_parents = [config.device for config in self.config.all().filter(device__parent_device__isnull=True)]
         has_parent = self.config.all().filter(device__parent_device__isnull=False)
         for config in has_parent:
@@ -129,12 +126,7 @@ class Cruise(models.Model):
                 parent = parent.parent_device
             if parent not in no_parents:
                 no_parents.append(parent)
-        self.parent_devices.add(*no_parents)
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.set_parent_devices()
-        super().save(*args, **kwargs)
+        return no_parents
 
 class GPS(models.Model):
     latitude_degree = models.IntegerField(default=0)
