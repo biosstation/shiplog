@@ -4,7 +4,7 @@ from django import forms
 from django.http import HttpResponseRedirect
 from django.contrib import admin
 from django.shortcuts import render
-from .models import Cruise, Device, Event, ShipLog, WireReport, Wire, Config
+from .models import Cruise, Device, Event, ShipLog, WireReport, Wire, Config, GPS
 
 admin.site.site_header = 'ShipLog Admin Site'
 admin.site.index_title = 'ShipLog administration'
@@ -59,7 +59,7 @@ class ShipLogAdmin(admin.ModelAdmin):
     list_filter = (CruiseListFilter, )
 
     def get_form(self, request, obj=None, **kwargs):
-        self.readonly_fields = ['end_date']
+        self.readonly_fields = []
         if obj is None:
             return super().get_form(request, obj, **kwargs)
         if obj.cruise.has_cruise_ended():
@@ -117,11 +117,20 @@ class WireReportAdmin(admin.ModelAdmin):
             context['end_date'] = obj.end_date
             return render(request, 'admin/wirereport.html', context)
 
+class GPSAdmin(admin.ModelAdmin):
+    def get_model_perms(self, request):
+        return {}
+
+class ConfigAdmin(admin.ModelAdmin):
+    def get_model_perms(self, request):
+        return {}
+
 admin.site.register(Device)
 admin.site.register(Event)
 admin.site.register(Cruise, CruiseAdmin)
 admin.site.register(ShipLog, ShipLogAdmin)
-admin.site.register(Config)
+admin.site.register(Config, ConfigAdmin)
 admin.site.register(Wire)
+admin.site.register(GPS, GPSAdmin)
 admin.site.register(WireReport, WireReportAdmin)
 

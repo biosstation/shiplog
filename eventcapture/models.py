@@ -66,7 +66,7 @@ class Config(models.Model):
         limit_choices_to={'events':not None} # only show devices with events
     )
     wire = models.ForeignKey(Wire, on_delete=models.CASCADE, null=True, blank=True)
-    winch = models.IntegerField(choices=settings.WINCH_CHOICES)
+    winch = models.IntegerField(choices=settings.WINCH_CHOICES, default=0)
 
     def __str__(self):
         winch = 'not on a winch'
