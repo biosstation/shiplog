@@ -1,10 +1,13 @@
 import os
+import pytz
+from datetime import datetime
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from django.conf import settings
 from eventcapture import utils
-from eventcapture.models import Cruise, Device, Event, ShipLog, Cast, CastReport
+from eventcapture.models import Cruise, Device, Event, ShipLog, Cast, CastReport, GPS
+from eventcapture.tasks import testing
 
 def index(request):
     context = {}
@@ -23,8 +26,13 @@ def index(request):
     cruise = Cruise.objects.get(pk=int(cruise_id))
     device = Device.objects.get(pk=int(device_id))
     event = Event.objects.get(pk=int(event_id))
-    shiplog = ShipLog(cruise=cruise, device=device, event=event)
+    gps = GPS()
+    gps.save()
+    timestamp = datetime.now(pytz.utc)
+    shiplog = ShipLog(cruise=cruise, device=device, event=event, gps=gps, timestamp=timestamp)
     shiplog.save()
+    if shiplog.event.name == 'Recover':
+        testing.delay(shiplog.id)
     context['event_was_logged'] = True
     return render(request, 'index.html', context)
 

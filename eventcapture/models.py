@@ -200,18 +200,6 @@ class ShipLog(models.Model):
             raise ValueError('More than one of the same device configured for this cruise')
         return configs.first()
 
-    def save(self, *args, **kwargs):
-        gps = GPS()
-        gps.save()
-        self.gps = gps
-        self.timestamp = datetime.now(pytz.utc)
-        super().save(*args, **kwargs)
-        if self.event.name == 'Recover':
-            config = self.find_config()
-            deployment = self.find_deployment()
-            cast = Cast(deployment=deployment, recovery=self, config=config)
-            cast.save()
-
     @classmethod
     def get_log(cls, cruise):
         return cls.objects.filter(cruise__id=cruise.id)
