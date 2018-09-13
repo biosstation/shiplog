@@ -3,11 +3,11 @@
 {% include "lineage.html" %}
 <h3>Please choose a device:</h3>
 <div class="btn-group-vertical w-100">
-    {% for child in children.all %}
+    {% for child in children %}
     <a href="{% url 'device' device_id=child.id %}" class="btn btn-primary btn-block btn-xlarge">{{ child.name }}</a>
     {% endfor %}
 </div>
-{% if not children.all %}
+{% if not children %}
 {% include "error.html" with error="No events were found" message="Please have an admin add events for this device" %}
 {% endif %}
 {% endblock %}

@@ -30,8 +30,8 @@ def device(request, device_id):
     device = Device.objects.get(pk=int(device_id))
     if any(device.events.all()):
         return HttpResponseRedirect(reverse('event', args=[device_id]))
-    child_devices = Device.objects.filter(parent_device=device_id)
-    context['children'] = child_devices
+    cruise = Cruise.get_active_cruise()
+    context['children'] = device.get_child_devices(cruise)
     context['device'] = device
     context['parents'] = device.get_lineage()
     return render(request, 'device.html', context)

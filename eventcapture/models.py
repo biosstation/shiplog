@@ -35,6 +35,10 @@ class Device(models.Model):
         blank=True
     )
 
+    def get_child_devices(self, cruise):
+        """Get child devices for this cruise only"""
+        return [config.device for config in cruise.config.filter(device__parent_device=self.id)]
+
     def get_lineage(self):
         lineage = []
         device = self
