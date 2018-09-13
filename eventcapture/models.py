@@ -120,7 +120,7 @@ class Cruise(models.Model):
         return cruises.first()
 
     def get_parent_devices(self):
-        """UNUSED: Unique list of highest-level parents devices"""
+        """Unique list of highest-level parents devices"""
         no_parents = [config.device for config in self.config.all().filter(device__parent_device__isnull=True)]
         has_parent = self.config.all().filter(device__parent_device__isnull=False)
         for config in has_parent:

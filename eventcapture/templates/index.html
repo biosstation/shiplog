@@ -1,19 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
 {% if cruise %}
-{% include 'lineage.html' %}
-<h3>Please choose a device:</h3>
-<div class="btn-group-vertical w-100">
-    {% for config in cruise.config.all %}
-    <a href="{% url 'device' device_id=config.device.id %}" class="btn btn-primary btn-block btn-xlarge">{{ config.device.name }}</a>
-    {% endfor %}
-</div>
+    {% if devices %}
+    {% include 'lineage.html' %}
+    <h3>Please choose a device:</h3>
+    <div class="btn-group-vertical w-100">
+        {% for device in devices %}
+        <a href="{% url 'device' device_id=device.id %}" class="btn btn-primary btn-block btn-xlarge">{{ device.name }}</a>
+        {% endfor %}
+    </div>
+    {% else %}
+    {% include 'warning.html' with header="No Devices Found" message="There are no devices configured for this cruise" %}
+    {% endif %}
 {% else %}
-{% include 'warning.html' with header="Not Cruising" message="The ship is not cruising at this time" %}
+    {% include 'warning.html' with header="Not Cruising" message="The ship is not cruising at this time" %}
 {% endif %}
 {% endblock %}
 {% block js %}
-{% if success %}
+{% if event_was_logged %}
 <script>
 {% autoescape on %}
 $(function() {

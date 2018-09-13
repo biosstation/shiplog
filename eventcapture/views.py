@@ -7,8 +7,11 @@ from eventcapture import utils
 from eventcapture.models import Cruise, Device, Event, ShipLog, Cast, CastReport
 
 def index(request):
+    context = {}
+    cruise = Cruise.get_active_cruise()
+    context['devices'] = cruise.get_parent_devices()
     if request.method != 'POST':
-        return render(request, 'index.html')
+        return render(request, 'index.html', context)
     cruise_id = request.POST.get('cruise', None)
     device_id = request.POST.get('device', None)
     event_id = request.POST.get('event', None)
@@ -19,11 +22,7 @@ def index(request):
     event = Event.objects.get(pk=int(event_id))
     shiplog = ShipLog(cruise=cruise, device=device, event=event)
     shiplog.save()
-    context = {
-        'success': True,
-        'device': device,
-        'event': event
-    }
+    context['event_was_logged'] = True
     return render(request, 'index.html', context)
 
 def device(request, device_id):
