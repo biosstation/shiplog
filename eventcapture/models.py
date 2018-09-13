@@ -190,6 +190,12 @@ class ShipLog(models.Model):
         deployment = deployments.order_by('timestamp').last()
         return deployment
 
+    def find_config(self):
+        configs = self.cruise.config.filter(device__id=self.device.id)
+        if len(configs) > 1:
+            raise ValueError('More than one of the same device configured for this cruise')
+        return configs.first()
+
     def save(self, *args, **kwargs):
         gps = GPS()
         gps.save()
@@ -197,8 +203,9 @@ class ShipLog(models.Model):
         self.timestamp = datetime.now(pytz.utc)
         super().save(*args, **kwargs)
         if self.event.name == 'Recover':
+            config = self.find_config()
             deployment = self.find_deployment()
-            cast = Cast(deployment=deployment, recovery=self)
+            cast = Cast(deployment=deployment, recovery=self, config=config)
             cast.save()
 
     @classmethod
@@ -232,21 +239,18 @@ class CastReport(models.Model):
     max_tension = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True, default=None)
     max_payout = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True, default=None)
     max_speed = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True, default=None)
-    wire = models.ForeignKey(Wire, on_delete=models.CASCADE, null=True, blank=True)
-    winch_number = models.IntegerField(choices=settings.WINCH_CHOICES, default=None)
 
     @classmethod
     def get_log(cls, cruise):
-        has_winch_number = models.Q(winch_number__gt=0)
+        has_winch_number = models.Q(cast__config__winch__gt=0)
         this_cruise = models.Q(cast__cruise_id=cruise.id)
         return cls.objects.filter(has_winch_number & this_cruise)
 
     def get_winch_data(self):
         deploy_date = self.cast.deployment.timestamp.date()
         recover_date = self.cast.recovery.timestamp.date()
-        device_id = self.cast.recovery.device.id
-        winch_number = self.cast.recovery.cruise.config.get(device__id=device_id).winch
-        self.winch_number = winch_number
+        device_id = self.cast.config.device.id
+        winch_number = self.cast.config.winch
         if not winch_number:
             return None
 
@@ -265,11 +269,9 @@ class CastReport(models.Model):
                 df = pd.read_csv(f, skiprows=skiprows, usecols=usecols)
                 df['Clock'] = pd.to_datetime(df['Clock'], format='%m/%d/%Y %I:%M:%S %p')
                 df.columns = names
-                #df = df.set_index('Date')
                 winch_data.append(df)
         try:
             df = pd.concat(winch_data)
-            #df = df.tz_localize(tz='UTC')
         except ValueError:
             return None # winch data was not found
         return df
@@ -291,7 +293,6 @@ class CastReport(models.Model):
             pass
 
     def save(self, *args, **kwargs):
-        self.wire = self.cast.recovery.cruise.config.get(device__id=self.cast.recovery.device.id).wire
         df = self.get_winch_data()
         self.set_cast_report(df)
         super().save(*args, **kwargs)
@@ -312,6 +313,10 @@ class Cast(models.Model):
         on_delete=models.CASCADE,
         related_name='recover_event',
     )
+    config = models.ForeignKey(
+        'Config',
+        on_delete=models.CASCADE
+    )
 
     @classmethod
     def _to_df(cls, log):
@@ -323,8 +328,8 @@ class Cast(models.Model):
         df['Max Tension'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_tension)
         df['Max Speed'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_tension)
         df['Max Payout'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_tension)
-        df['Wire'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).wire.serial_number)
-        df['Winch #'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).winch_number)
+        df['Wire'] = df['id'].apply(lambda x: Cast.objects.get(pk=x).config.wire.serial_number)
+        df['Winch #'] = df['id'].apply(lambda x: Cast.objects.get(pk=x).config.winch)
         df = df.drop(['id', 'deployment_id', 'recovery_id'], axis=1)
         return df
 
@@ -354,9 +359,9 @@ class WireReport(models.Model):
         # query criteria
         deployments_after = models.Q(deployment__timestamp__gte=start_date)
         recoveries_before = models.Q(recovery__timestamp__lte=end_date)
-        specific_wire = models.Q(cast_report__wire__serial_number=self.wire.serial_number)
+        specific_wire = models.Q(config__wire__serial_number=self.wire.serial_number)
 
-        # query and pull out casts reports
+        # query and pull out casts
         casts = Cast.objects.filter(deployments_after & recoveries_before & specific_wire)
         return casts
 

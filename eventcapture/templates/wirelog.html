@@ -30,8 +30,8 @@
       <td>{{ entry.max_tension }}</td>
       <td>{{ entry.max_speed }}</td>
       <td>{{ entry.max_payout }}</td>
-      <td>{{ entry.wire.serial_number }}</td>
-      <td>{{ entry.winch_number }}</td>
+      <td>{{ entry.cast.config.wire.serial_number }}</td>
+      <td>{{ entry.cast.config.winch }}</td>
     </tr>
   {% endfor %}
   </tbody>
