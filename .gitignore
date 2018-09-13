@@ -4,3 +4,4 @@ db.sqlite3
 media/*
 */**/.DS_Store
 eventcapture/migrations/*.py
+public/*

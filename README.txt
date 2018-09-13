@@ -1,7 +1,10 @@
 # Steps to setup shiplog for the first time
 
+# general installs
+sudo apt install python3-dev
+
 # install mysql server
-sudo apt install mysql-server libmysqlclient-dev python3-dev
+sudo apt install mysql-server libmysqlclient-dev
 mysql -u root -p -e "create database shiplog"
 
 # setup a virtualenv and activate that virtualenv

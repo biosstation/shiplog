@@ -9,7 +9,10 @@ from eventcapture.models import Cruise, Device, Event, ShipLog, Cast, CastReport
 def index(request):
     context = {}
     cruise = Cruise.get_active_cruise()
-    context['devices'] = cruise.get_parent_devices()
+    try:
+        context['devices'] = cruise.get_parent_devices()
+    except AttributeError:
+        pass
     if request.method != 'POST':
         return render(request, 'index.html', context)
     cruise_id = request.POST.get('cruise', None)

@@ -135,9 +135,6 @@ class GPSAdmin(admin.ModelAdmin):
 class ConfigAdmin(admin.ModelAdmin):
     form = ConfigForm
 
-    def get_model_perms(self, request):
-        return {}
-
 admin.site.register(Device)
 admin.site.register(Event)
 admin.site.register(Cruise, CruiseAdmin)
