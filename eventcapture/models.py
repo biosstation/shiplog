@@ -32,7 +32,6 @@ class Device(models.Model):
     )
     events = models.ManyToManyField(
         Event,
-        null=True,
         blank=True
     )
 
@@ -66,7 +65,11 @@ class Config(models.Model):
         limit_choices_to={'events':not None} # only show devices with events
     )
     wire = models.ForeignKey(Wire, on_delete=models.CASCADE, null=True, blank=True)
-    winch = models.IntegerField(choices=settings.WINCH_CHOICES, default=0)
+    winch = models.IntegerField(
+        choices=settings.WINCH_CHOICES,
+        default=0,
+        help_text='The winch selection is only used if it is part of the LCI-90i Winch Monitoring System (aka winches 1, 2, and 3).  If the winch is not instrumented with a tensiometer or meter wheel, then skip the winch selection.'
+    )
 
     def __str__(self):
         winch = 'not on a winch'
@@ -74,7 +77,7 @@ class Config(models.Model):
         if self.winch:
             winch = 'on winch #{}'.format(self.winch)
         if self.wire:
-            wire = 'on {}'.format(self.wire.name)
+            wire = 'on {}'.format(self.wire)
         return '{} {} {}'.format(self.device, winch, wire)
 
 class Cruise(models.Model):
@@ -199,8 +202,8 @@ class ShipLog(models.Model):
             cast.save()
 
     @classmethod
-    def get_log(cls, cruise_id):
-        return cls.objects.filter(cruise_id=cruise_id)
+    def get_log(cls, cruise):
+        return cls.objects.filter(cruise__id=cruise.id)
 
     @classmethod
     def get_all_logs(cls):
@@ -233,9 +236,9 @@ class CastReport(models.Model):
     winch_number = models.IntegerField(choices=settings.WINCH_CHOICES, default=None)
 
     @classmethod
-    def get_log(cls, cruise_id):
+    def get_log(cls, cruise):
         has_winch_number = models.Q(winch_number__gt=0)
-        this_cruise = models.Q(cast__cruise_id=cruise_id)
+        this_cruise = models.Q(cast__cruise_id=cruise.id)
         return cls.objects.filter(has_winch_number & this_cruise)
 
     def get_winch_data(self):
@@ -312,22 +315,22 @@ class Cast(models.Model):
 
     @classmethod
     def _to_df(cls, log):
-        columns = list(log.values('deployment', 'recovery', 'cast_report'))
+        columns = list(log.values('deployment_id', 'recovery_id', 'id'))
         df = pd.DataFrame(columns)
-        df['Deployed'] = df['deployment'].apply(lambda x: ShipLog.objects.get(pk=x).timestamp)
-        df['Recovered'] = df['recovery'].apply(lambda x: ShipLog.objects.get(pk=x).timestamp)
-        df['Device'] = df['recovery'].apply(lambda x: ShipLog.objects.get(pk=x).device)
-        df['Max Tension'] = df['cast_report'].apply(lambda x: CastReport.objects.get(pk=x).max_tension)
-        df['Max Speed'] = df['cast_report'].apply(lambda x: CastReport.objects.get(pk=x).max_tension)
-        df['Max Payout'] = df['cast_report'].apply(lambda x: CastReport.objects.get(pk=x).max_tension)
-        df['Wire'] = df['cast_report'].apply(lambda x: CastReport.objects.get(pk=x).wire.serial_number)
-        df['Winch #'] = df['cast_report'].apply(lambda x: CastReport.objects.get(pk=x).winch_number)
-        df = df.drop(['cast_report', 'deployment', 'recovery'], axis=1)
+        df['Deployed'] = df['deployment_id'].apply(lambda x: ShipLog.objects.get(pk=x).timestamp)
+        df['Recovered'] = df['recovery_id'].apply(lambda x: ShipLog.objects.get(pk=x).timestamp)
+        df['Device'] = df['recovery_id'].apply(lambda x: ShipLog.objects.get(pk=x).device)
+        df['Max Tension'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_tension)
+        df['Max Speed'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_tension)
+        df['Max Payout'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_tension)
+        df['Wire'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).wire.serial_number)
+        df['Winch #'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).winch_number)
+        df = df.drop(['id', 'deployment_id', 'recovery_id'], axis=1)
         return df
 
     @classmethod
-    def get_log(cls, cruise_id):
-        return cls.objects.filter(cruise_id=cruise_id)
+    def get_log(cls, cruise):
+        return cls.objects.filter(cruise__id=cruise.id)
 
     def save(self, *args, **kwargs):
         self.cruise = self.recovery.cruise

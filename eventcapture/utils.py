@@ -1,11 +1,8 @@
 import os
-from eventcapture.models import Cruise
 from django.conf import settings
 
-def to_csv(cls, cruise_id, filename):
-    cruise_id = int(cruise_id)
-    if cruise_id > 0:
-        cruise = Cruise.objects.get(pk=cruise_id)
+def to_csv(cls, cruise, filename):
+    if int(cruise.id) > 0:
         cruise_number = cruise.number
         log = cls.get_log(cruise)
     else:

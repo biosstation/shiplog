@@ -117,11 +117,24 @@ class WireReportAdmin(admin.ModelAdmin):
             context['end_date'] = obj.end_date
             return render(request, 'admin/wirereport.html', context)
 
+class ConfigForm(forms.ModelForm):
+    wire = forms.ModelChoiceField(
+        queryset=Wire.objects,
+        empty_label='No wire',
+        required=False
+    )
+
+    class Meta:
+        model = Config
+        exclude = []
+
 class GPSAdmin(admin.ModelAdmin):
     def get_model_perms(self, request):
         return {}
 
 class ConfigAdmin(admin.ModelAdmin):
+    form = ConfigForm
+
     def get_model_perms(self, request):
         return {}
 
