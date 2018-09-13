@@ -3,7 +3,7 @@ from celery import shared_task
 from eventcapture.models import Cast, ShipLog
 
 @shared_task
-def testing(recovery_id):
+def analyze_cast(recovery_id):
     recovery = ShipLog.objects.get(pk=int(recovery_id))
     config = recovery.find_config()
     deployment = recovery.find_deployment()

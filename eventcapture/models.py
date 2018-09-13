@@ -278,9 +278,9 @@ class CastReport(models.Model):
         try:
             df = self.subset_winch_data(df)
             if not df.empty:
-                self.max_tension = df['Tension'].max() # in lbs
-                self.max_payout = df['Payout'].max()  # in meters
-                self.max_speed = df['Speed'].max()   # in meters per minute
+                self.max_tension = float(df['Tension'].max()) # in lbs
+                self.max_payout = float(df['Payout'].max()) # in meters
+                self.max_speed = float(df['Speed'].max()) # in meters per minute
         except (AttributeError, TypeError):
             pass
 
@@ -288,7 +288,6 @@ class CastReport(models.Model):
         df = self.get_winch_data()
         self.set_cast_report(df)
         super().save(*args, **kwargs)
-
 
 class Cast(models.Model):
     cruise = models.ForeignKey(
