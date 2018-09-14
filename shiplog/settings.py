@@ -121,7 +121,7 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(PROJECT_PATH, 'static')
 ]
-MEDIA_ROOT = os.path.join(PROJECT_PATH, 'public', 'media')
+MEDIA_ROOT = os.path.join(PROJECT_PATH, 'media')
 MEDIA_URL = '/media/'
 
 # User settings
@@ -137,4 +137,5 @@ WINCH_CHOICES = (
 )
 
 # async settings
+ASYNC=False
 CELERY_BROKER_URL = 'amqp://localhost'

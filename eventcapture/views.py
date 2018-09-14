@@ -32,7 +32,10 @@ def index(request):
     shiplog = ShipLog(cruise=cruise, device=device, event=event, gps=gps, timestamp=timestamp)
     shiplog.save()
     if shiplog.event.name == 'Recover':
-        analyze_cast.delay(shiplog.id)
+        if settings.ASYNC:
+            analyze_cast.delay(shiplog.id)
+        else:
+            analyze_cast(shiplog.id)
     context['event_was_logged'] = True
     return render(request, 'index.html', context)
 

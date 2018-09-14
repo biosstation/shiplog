@@ -7,6 +7,10 @@ sudo apt install python3-dev
 sudo apt install mysql-server libmysqlclient-dev
 mysql -u root -p -e "create database shiplog"
 
+# install async
+#sudo apt install -y erlang  # optional?
+sudo apt install rabbitmq-server
+
 # setup a virtualenv and activate that virtualenv
 sudo apt install virtualenv
 mkdir envs
@@ -14,7 +18,7 @@ virtualenv --python=/usr/bin/python3 ~/envs/shiplog
 source ~/envs/shiplog/bin/activate
 
 # pip packages
-pip install django mysqlclient pandas
+pip install django mysqlclient pandas celery
 
 # get git repo
 git clone https://github.com/biosstation/shiplog
