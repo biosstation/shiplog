@@ -15,13 +15,13 @@
     </tr>
   </thead>
   <tbody>
-  {% for cast in casts %}
+  {% for cr in cast_reports %}
     <tr>
       <td>{{ forloop.counter }}</td>
-      <td>{{ cast.recovery.timestamp }}</td>
-      <td>{{ cast.cast_report.max_tension }}</td>
-      <td>{{ cast.cast_report.max_speed }}</td>
-      <td>{{ cast.cast_report.max_payout }}</td>
+      <td>{{ cr.cast.recovery.timestamp }}</td>
+      <td>{{ cr.max_tension }}</td>
+      <td>{{ cr.max_speed }}</td>
+      <td>{{ cr.max_payout }}</td>
     </tr>
   {% endfor %}
   </tbody>

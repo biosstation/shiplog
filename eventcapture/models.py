@@ -66,7 +66,7 @@ class Config(models.Model):
     device = models.ForeignKey(
         Device,
         on_delete=models.CASCADE,
-        limit_choices_to={'events':not None} # only show devices with events
+        #limit_choices_to={'events':not None} # only show devices with events
     )
     wire = models.ForeignKey(Wire, on_delete=models.CASCADE, null=True, blank=True)
     winch = models.IntegerField(
@@ -349,12 +349,12 @@ class WireReport(models.Model):
         end_date += timedelta(days=1)  # increment day to get casts through the end of the day
 
         # query criteria
-        deployments_after = models.Q(deployment__timestamp__gte=start_date)
-        recoveries_before = models.Q(recovery__timestamp__lte=end_date)
-        specific_wire = models.Q(config__wire__serial_number=self.wire.serial_number)
+        deployments_after = models.Q(cast__deployment__timestamp__gte=start_date)
+        recoveries_before = models.Q(cast__recovery__timestamp__lte=end_date)
+        specific_wire = models.Q(cast__config__wire__serial_number=self.wire.serial_number)
 
         # query and pull out casts
-        casts = Cast.objects.filter(deployments_after & recoveries_before & specific_wire)
+        casts = CastReport.objects.filter(deployments_after & recoveries_before & specific_wire)
         return casts
 
     def save(self, *args, **kwargs):
