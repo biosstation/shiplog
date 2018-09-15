@@ -8,6 +8,17 @@ from datetime import datetime, timedelta
 from django.db import models
 from django.conf import settings
 
+def config_device_choices():
+    devices = Device.objects.filter(events__isnull=False)
+    return {'id__in': devices}
+
+def get_default_cruise():
+    return Cruise.get_active_cruise()
+
+def get_default_gps():
+    gps = GPS()
+    gps.save(empty=True)
+    return gps
 
 class Event(models.Model):
     name = models.CharField(
@@ -66,7 +77,7 @@ class Config(models.Model):
     device = models.ForeignKey(
         Device,
         on_delete=models.CASCADE,
-        #limit_choices_to={'events':not None} # only show devices with events
+        limit_choices_to=config_device_choices,
     )
     wire = models.ForeignKey(Wire, on_delete=models.CASCADE, null=True, blank=True)
     winch = models.IntegerField(
@@ -141,7 +152,9 @@ class GPS(models.Model):
     latitude_minute = models.DecimalField(max_digits=8, decimal_places=4, default=0)
     longitude_minute = models.DecimalField(max_digits=8, decimal_places=4, default=0)
 
-    def save(self, *args, **kwargs):
+    def save(self, empty=False, *args, **kwargs):
+        if empty:
+            super().save(*args, **kwargs)
         df = self._read_gps_file()
         try:
             gps = self._get_latest_gps_record(df)
@@ -170,19 +183,23 @@ class ShipLog(models.Model):
     cruise = models.ForeignKey(
         'Cruise',
         on_delete=models.CASCADE,
+        default=get_default_cruise,
     )
     device = models.ForeignKey(
         'Device',
         on_delete=models.CASCADE,
+        help_text='Please only choose devices that are configured for the current cruise',
     )
     event = models.ForeignKey(
         'Event',
         on_delete=models.CASCADE,
+        help_text='Please only choose events that are configured for the current cruise',
     )
     gps = models.ForeignKey(
         'GPS',
         on_delete=models.CASCADE,
-        help_text='Please note that adding a ship log entry retroactively will not capture metadata.  There will be no meteorological data captured for this event.  Also, the GPS data will have to be manually entered.',
+        default=get_default_gps,
+        help_text='Please note that adding or changing a ship log entry will not capture metadata.  There will be no meteorological data captured for this event.  GPS data will be set to (0°0.0, 0°,0.0) if you choose to save',
     )
     timestamp = models.DateTimeField()
 
@@ -224,6 +241,9 @@ class ShipLog(models.Model):
         df = df[['Date', 'Time', 'Device', 'Event', 'Latitude', 'Longitude']]  # reorder columns
         return df
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return '{:%Y-%m-%d %H:%M:%S}: {} - {} {}'.format(self.timestamp, self.cruise, self.device, self.event)
 
@@ -232,6 +252,28 @@ class CastReport(models.Model):
     max_tension = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True, default=None)
     max_payout = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True, default=None)
     max_speed = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True, default=None)
+
+    @classmethod
+    def get_all_logs(cls):
+        return cls.objects.all()
+
+    @classmethod
+    def _to_df(cls, log):
+        #columns = list(log.values('deployment_id', 'recovery_id', 'id'))
+        columns = list(log.values('cast', 'max_tension', 'max_speed', 'max_payout'))
+        df = pd.DataFrame(columns)
+        df['Deployed'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).deployment.timestamp)
+        df['Recovered'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).recovery.timestamp)
+        df['Device'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).recovery.device)
+        df['Wire'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).config.wire.serial_number)
+        df['Winch #'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).config.winch)
+        df = df.drop(['cast'], axis=1)
+        df = df.rename(columns={
+            'max_tension': 'Max Tension',
+            'max_speed': 'Max Speed',
+            'max_payout': 'Max Payout',
+        })
+        return df
 
     @classmethod
     def get_log(cls, cruise):
@@ -309,21 +351,6 @@ class Cast(models.Model):
         'Config',
         on_delete=models.CASCADE
     )
-
-    @classmethod
-    def _to_df(cls, log):
-        columns = list(log.values('deployment_id', 'recovery_id', 'id'))
-        df = pd.DataFrame(columns)
-        df['Deployed'] = df['deployment_id'].apply(lambda x: ShipLog.objects.get(pk=x).timestamp)
-        df['Recovered'] = df['recovery_id'].apply(lambda x: ShipLog.objects.get(pk=x).timestamp)
-        df['Device'] = df['recovery_id'].apply(lambda x: ShipLog.objects.get(pk=x).device)
-        df['Max Tension'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_tension)
-        df['Max Speed'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_speed)
-        df['Max Payout'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_payout)
-        df['Wire'] = df['id'].apply(lambda x: Cast.objects.get(pk=x).config.wire.serial_number)
-        df['Winch #'] = df['id'].apply(lambda x: Cast.objects.get(pk=x).config.winch)
-        df = df.drop(['id', 'deployment_id', 'recovery_id'], axis=1)
-        return df
 
     @classmethod
     def get_log(cls, cruise):

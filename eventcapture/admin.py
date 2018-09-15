@@ -9,7 +9,29 @@ from .models import Cruise, Device, Event, ShipLog, CastReport, WireReport, Wire
 admin.site.site_header = 'ShipLog Admin Site'
 admin.site.index_title = 'ShipLog administration'
 
-class CruiseListFilter(admin.SimpleListFilter):
+class CastReportCruiseListFilter(admin.SimpleListFilter):
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = 'cruise'
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'cruises'
+
+    def lookups(self, request, model_admin):
+        list_of_cruises = []
+        queryset = Cruise.objects.all()
+        for cruise in queryset:
+            list_of_cruises.append(
+                (str(cruise.id), cruise.name)
+            )
+        return list_of_cruises
+
+    def queryset(self, request, queryset):
+        # Compare the requested value to decide how to filter the queryset.
+        if self.value():
+            return queryset.filter(cast__cruise_id=self.value())
+
+class ShipLogCruiseListFilter(admin.SimpleListFilter):
     # Human-readable title which will be displayed in the
     # right admin sidebar just above the filter options.
     title = 'cruise'
@@ -39,7 +61,7 @@ class CastReportForm(forms.ModelForm):
 class CastReportAdmin(admin.ModelAdmin):
     form = CastReportForm
     list_display = ('cast', 'max_tension', 'max_speed', 'max_payout', )
-    list_filter = (CruiseListFilter, )
+    list_filter = (CastReportCruiseListFilter, )
 
     def get_form(self, request, obj=None, **kwargs):
         self.readonly_fields = ['cast', 'max_tension', 'max_payout', 'max_speed']
@@ -58,10 +80,10 @@ class ShipLogForm(forms.ModelForm):
 class ShipLogAdmin(admin.ModelAdmin):
     form = ShipLogForm
     list_display = ('timestamp', 'event', 'device', 'cruise', )
-    list_filter = (CruiseListFilter, )
+    list_filter = (ShipLogCruiseListFilter, )
 
     def get_form(self, request, obj=None, **kwargs):
-        self.readonly_fields = []
+        self.readonly_fields = ['cruise', 'gps']
         if obj is None:
             return super().get_form(request, obj, **kwargs)
         if obj.cruise.has_cruise_ended():
