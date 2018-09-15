@@ -11,7 +11,10 @@ from eventcapture.tasks import analyze_cast
 
 def index(request):
     context = {}
-    cruise = Cruise.get_active_cruise()
+    try:
+        cruise = Cruise.get_active_cruise()
+    except ValueError:
+        return render(request, 'index.html', context)
     try:
         context['devices'] = cruise.get_parent_devices()
     except AttributeError:
@@ -44,7 +47,10 @@ def device(request, device_id):
     device = Device.objects.get(pk=int(device_id))
     if any(device.events.all()):
         return HttpResponseRedirect(reverse('event', args=[device_id]))
-    cruise = Cruise.get_active_cruise()
+    try:
+        cruise = Cruise.get_active_cruise()
+    except ValueError:
+        return render(request, 'device.html', context)
     context['children'] = device.get_child_devices(cruise)
     context['device'] = device
     context['parents'] = device.get_lineage()
@@ -71,7 +77,10 @@ def download(request, log, cruise_id):
         return response
 
 def eventlog(request):
-    cruise = Cruise.get_active_cruise()
+    try:
+        cruise = Cruise.get_active_cruise()
+    except ValueError:
+        return render(request, 'eventlog.html')
     if not cruise:
         return render(request, 'eventlog.html')
     context = {}
