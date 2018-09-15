@@ -26,7 +26,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-	'eventcapture',
+    'eventcapture',
+    'celery',
 ]
 
 MIDDLEWARE = [
@@ -137,5 +138,5 @@ WINCH_CHOICES = (
 )
 
 # async settings
-ASYNC=False
+ASYNC=True
 CELERY_BROKER_URL = 'amqp://localhost'

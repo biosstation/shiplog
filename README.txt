@@ -8,8 +8,7 @@ sudo apt install mysql-server libmysqlclient-dev
 mysql -u root -p -e "create database shiplog"
 
 # install async
-#sudo apt install -y erlang  # optional?
-sudo apt install rabbitmq-server
+sudo apt install rabbitmq-server supervisor
 
 # setup a virtualenv and activate that virtualenv
 sudo apt install virtualenv

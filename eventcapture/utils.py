@@ -10,6 +10,7 @@ def to_csv(cls, cruise, filename):
         log = cls.get_all_logs()
     filename = filename.format(cruise_number)
     df = cls._to_df(log)
-    outfile = os.path.join(settings.MEDIA_ROOT, filename)
+    root_path = os.path.dirname(__file__)
+    outfile = os.path.join(root_path, os.pardir, 'media', filename)
     df.to_csv(outfile)
     return outfile
