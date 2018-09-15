@@ -30,3 +30,16 @@ td {
 .dataTables_info, .dataTables_length {
     color: tomato!important;
 }
+
+.pagination > li > a, .pagination > li > span{
+    color: tomato!important;
+    background-color: lightgrey!important;
+    border: 1px solid tomato!important;
+}
+
+.pagination > li.active > a, .pagination > li.active > span{
+    background-color: dimgrey!important;
+    color: tomato!important;
+    border: 1px solid tomato!important;
+}
+
