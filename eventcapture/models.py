@@ -182,6 +182,7 @@ class ShipLog(models.Model):
     gps = models.ForeignKey(
         'GPS',
         on_delete=models.CASCADE,
+        help_text='Please note that adding a ship log entry retroactively will not capture metadata.  There will be no meteorological data captured for this event.  Also, the GPS data will have to be manually entered.',
     )
     timestamp = models.DateTimeField()
 
@@ -317,8 +318,8 @@ class Cast(models.Model):
         df['Recovered'] = df['recovery_id'].apply(lambda x: ShipLog.objects.get(pk=x).timestamp)
         df['Device'] = df['recovery_id'].apply(lambda x: ShipLog.objects.get(pk=x).device)
         df['Max Tension'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_tension)
-        df['Max Speed'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_tension)
-        df['Max Payout'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_tension)
+        df['Max Speed'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_speed)
+        df['Max Payout'] = df['id'].apply(lambda x: CastReport.objects.get(cast=x).max_payout)
         df['Wire'] = df['id'].apply(lambda x: Cast.objects.get(pk=x).config.wire.serial_number)
         df['Winch #'] = df['id'].apply(lambda x: Cast.objects.get(pk=x).config.winch)
         df = df.drop(['id', 'deployment_id', 'recovery_id'], axis=1)
