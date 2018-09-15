@@ -26,3 +26,7 @@ h1, h2, h3 {
 td {
     color: tomato!important;
 }
+
+.dataTables_info, .dataTables_length {
+    color: tomato!important;
+}
