@@ -64,11 +64,10 @@ def event(request, device_id):
     return render(request, 'event.html', context)
 
 def download(request, log, cruise_id):
-    cruise = Cruise.objects.get(pk=cruise_id)
     if log == 'eventlog':
-        csv_path = utils.to_csv(ShipLog, cruise, settings.EVENT_LOG_FILENAME)
+        csv_path = utils.to_csv(ShipLog, cruise_id, settings.EVENT_LOG_FILENAME)
     elif log == 'wirelog':
-        csv_path = utils.to_csv(Cast, cruise, settings.WIRE_LOG_FILENAME)
+        csv_path = utils.to_csv(Cast, cruise_id, settings.WIRE_LOG_FILENAME)
     else:
         raise ValueError('Unknown log type')
     with open(csv_path, 'rb') as f:
