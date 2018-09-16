@@ -135,7 +135,7 @@ class WireReportAdmin(admin.ModelAdmin):
     def view_wire_report(self, request, obj):
         if "run_wire_report" in request.POST:
             context = {}
-            context['cast_reports'] = obj.get_relevant_casts()
+            context['cast_reports'] = obj.run_wire_report()
             context['wire'] = obj.wire
             context['start_date'] = obj.start_date
             context['end_date'] = obj.end_date

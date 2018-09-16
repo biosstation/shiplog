@@ -4,6 +4,8 @@
     <h1>Wire Report for {{ wire.serial_number }}</h1>
 </div>
 <p>{{ start_date }} to {{ end_date }}</p>
+<a href="/media/{{ wire.serial_number }}_WireReport.csv">Download {{ wire.serial_number }} wire report</a>
+<br>
 <table class="table table-striped">
   <thead>
     <tr>
@@ -26,5 +28,6 @@
   {% endfor %}
   </tbody>
 </table>
+<br>
 <a href="/admin/eventcapture/wirereport">Back to Wire Report</a>
 {% endblock %}

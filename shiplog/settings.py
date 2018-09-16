@@ -128,6 +128,7 @@ MEDIA_URL = '/media/'
 # User settings
 EVENT_LOG_FILENAME = '{}_EventLog.csv'
 WIRE_LOG_FILENAME = '{}_WireLog.csv'
+WIRE_REPORT_FILENAME = '{}_WireReport.csv'
 GPS_FILENAME = '/mnt/gps/MainMetMast_Nav.dat'
 WINCH_DATAFILE_PATH = '/mnt/winch/*WinchDAC.csv'
 WINCH_CHOICES = (

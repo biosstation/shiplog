@@ -259,7 +259,6 @@ class CastReport(models.Model):
 
     @classmethod
     def _to_df(cls, log):
-        #columns = list(log.values('deployment_id', 'recovery_id', 'id'))
         columns = list(log.values('cast', 'max_tension', 'max_speed', 'max_payout'))
         df = pd.DataFrame(columns)
         df['Deployed'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).deployment.timestamp)
@@ -370,7 +369,32 @@ class WireReport(models.Model):
     end_date = models.DateField()
     wire = models.ForeignKey(Wire, on_delete=models.CASCADE, default=None)
 
-    def get_relevant_casts(self):
+    def _make_df(self, casts):
+        columns = list(casts.values('cast', 'max_tension', 'max_speed', 'max_payout'))
+        df = pd.DataFrame(columns)
+        df['Date'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).recovery.timestamp)
+        df = df.rename(columns={
+            'max_tension': 'Max Tension',
+            'max_speed': 'Max Speed',
+            'max_payout': 'Max Payout',
+        })
+        df = df.drop(['cast'], axis=1)
+        df = df[['Date', 'Max Tension', 'Max Speed', 'Max Payout']] # reorder columns
+        return df
+
+    def _save_wire_report(self, casts):
+        df = self._make_df(casts)
+        filename = settings.WIRE_REPORT_FILENAME.format(self.wire.serial_number)
+        root_path = os.path.dirname(__file__)
+        outfile = os.path.join(root_path, os.pardir, 'media', filename)
+        df.to_csv(outfile)
+
+    def run_wire_report(self):
+        casts = self._get_relevant_casts()
+        self._save_wire_report(casts)
+        return casts
+
+    def _get_relevant_casts(self):
         start_date = self.start_date
         end_date = self.end_date
         end_date += timedelta(days=1)  # increment day to get casts through the end of the day
