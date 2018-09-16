@@ -83,17 +83,25 @@ class ShipLogAdmin(admin.ModelAdmin):
     list_filter = (ShipLogCruiseListFilter, )
 
     def get_form(self, request, obj=None, **kwargs):
-        self.readonly_fields = ['cruise', 'gps']
-        if obj is None:
-            return super().get_form(request, obj, **kwargs)
-        if obj.cruise.has_cruise_ended():
-            self.readonly_fields = ['cruise', 'device', 'event', 'gps', 'timestamp']
+        # shiplog entries are read only by default
+        self.readonly_fields = ['cruise', 'device', 'event', 'gps', 'timestamp']
+        if not obj:
+            # adding a new shiplog entry from the admin panel is okay for the current cruise
+            self.readonly_fields = ['cruise', 'gps']
         return super().get_form(request, obj, **kwargs)
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context['cruise_id'] = request.GET.get('cruises', 0)
         return super().changelist_view(request, extra_context=extra_context)
+
+    def render_change_form(self, request, context, *args, **kwargs):
+        self.change_form_template = 'admin/eventcapture/shiplog/change_form_help_text.html'
+        extra = {
+            'help_text': 'WARNING: Do not click the save button unless you know what you are doing!'
+        }
+        context.update(extra)
+        return super().render_change_form(request, context, *args, **kwargs)
 
 class CruiseForm(forms.ModelForm):
     class Meta:
@@ -158,6 +166,13 @@ class GPSAdmin(admin.ModelAdmin):
 
 class ConfigAdmin(admin.ModelAdmin):
     form = ConfigForm
+
+    def get_form(self, request, obj=None, **kwargs):
+        # existing configs are read only
+        self.readonly_fields = ['device', 'wire', 'winch']
+        if not obj:
+            self.readonly_fields = []
+        return super().get_form(request, obj, **kwargs)
 
 admin.site.register(Device)
 admin.site.register(Event)

@@ -7,7 +7,6 @@ from django.urls import reverse
 from django.conf import settings
 from eventcapture import utils
 from eventcapture.models import Cruise, Device, Event, ShipLog, Cast, CastReport, GPS
-from eventcapture.tasks import analyze_cast
 
 def index(request):
     context = {}
@@ -34,11 +33,6 @@ def index(request):
     timestamp = datetime.now(pytz.utc)
     shiplog = ShipLog(cruise=cruise, device=device, event=event, gps=gps, timestamp=timestamp)
     shiplog.save()
-    if shiplog.event.name == 'Recover':
-        if settings.ASYNC:
-            analyze_cast.delay(shiplog.id)
-        else:
-            analyze_cast(shiplog.id)
     context['event_was_logged'] = True
     return render(request, 'index.html', context)
 
