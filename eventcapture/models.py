@@ -405,7 +405,7 @@ class WireReport(models.Model):
         specific_wire = models.Q(cast__config__wire__serial_number=self.wire.serial_number)
 
         # query and pull out casts
-        casts = CastReport.objects.filter(deployments_after & recoveries_before & specific_wire)
+        casts = CastReport.objects.filter(deployments_after & recoveries_before & specific_wire).order_by('cast__recovery__timestamp')
         return casts
 
     def save(self, *args, **kwargs):
