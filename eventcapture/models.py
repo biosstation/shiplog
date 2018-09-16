@@ -28,7 +28,7 @@ def get_default_cruise():
 
 def get_default_gps():
     gps = GPS()
-    gps.save(empty=True)
+    gps.save(timestamp=None)
     return gps
 
 class Event(models.Model):
@@ -163,29 +163,33 @@ class GPS(models.Model):
     latitude_minute = models.DecimalField(max_digits=8, decimal_places=4, default=0)
     longitude_minute = models.DecimalField(max_digits=8, decimal_places=4, default=0)
 
-    def save(self, empty=False, *args, **kwargs):
-        if empty:
-            super().save(*args, **kwargs)
+    def save(self, timestamp=None, *args, **kwargs):
         df = self._read_gps_file()
         try:
-            gps = self._get_latest_gps_record(df)
-            self.latitude_degree = gps.iloc[0]['Lat_deg']
-            self.longitude_degree = gps.iloc[0]['Lon_deg']
-            self.latitude_minute = gps.iloc[0]['Lat_min']
-            self.longitude_minute = gps.iloc[0]['Lon_min']
-        except AttributeError:
+            gps = self._get_gps_record(df, timestamp)
+            self.latitude_degree = gps['Lat_deg']
+            self.longitude_degree = gps['Lon_deg']
+            self.latitude_minute = gps['Lat_min']
+            self.longitude_minute = gps['Lon_min']
+        except TypeError:
             pass
         super().save(*args, **kwargs)
 
     def _read_gps_file(self):
-        dtype = {'Lat_deg':float, 'Lat_min':float, 'Lon_deg':float, 'Lon_min':float}
+        dtype = {'TIMESTAMP':str, 'Lat_deg':float, 'Lat_min':float, 'Lon_deg':float, 'Lon_min':float}
         gps_file = settings.GPS_FILENAME
-        if os.path.isfile(gps_file):
-            return pd.read_csv(gps_file, skiprows=[0, 2, 3], usecols=dtype.keys(), header=0, dtype=dtype, na_values=['NAN'])
-        return None
+        if not os.path.isfile(gps_file):
+            return None
+        df = pd.read_csv(gps_file, skiprows=[0, 2, 3], usecols=dtype.keys(), header=0, dtype=dtype, na_values=['NAN'], parse_dates=['TIMESTAMP'], index_col='TIMESTAMP')
+        df = df.tz_localize('UTC')
+        return df
 
-    def _get_latest_gps_record(self, df):
-        return df.tail(1)
+    def _get_gps_record(self, df, timestamp):
+        try:
+            row = df.iloc[df.index.get_loc(timestamp, method='bfill')]
+        except KeyError:
+            row = None
+        return row
 
     def __str__(self):
         return '{}°{}'', {}°{}'''.format(self.latitude_degree, self.latitude_minute, self.longitude_degree, self.longitude_minute)

@@ -28,9 +28,9 @@ def index(request):
     cruise = Cruise.objects.get(pk=int(cruise_id))
     device = Device.objects.get(pk=int(device_id))
     event = Event.objects.get(pk=int(event_id))
-    gps = GPS()
-    gps.save()
     timestamp = datetime.now(pytz.utc)
+    gps = GPS()
+    gps.save(timestamp=timestamp)
     shiplog = ShipLog(cruise=cruise, device=device, event=event, gps=gps, timestamp=timestamp)
     shiplog.save()
     context['event_was_logged'] = True

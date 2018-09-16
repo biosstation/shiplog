@@ -139,5 +139,5 @@ WINCH_CHOICES = (
 )
 
 # async settings
-ASYNC=False
+ASYNC=True
 CELERY_BROKER_URL = 'amqp://localhost'
