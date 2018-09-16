@@ -1,3 +1,4 @@
+from __future__ import absolute_import, unicode_literals
 import os
 import pytz
 import ntpath
@@ -7,6 +8,16 @@ from glob import glob
 from datetime import datetime, timedelta
 from django.db import models
 from django.conf import settings
+from celery import shared_task
+
+@shared_task
+def analyze_cast(recovery_id):
+    recovery = ShipLog.objects.get(pk=int(recovery_id))
+    config = recovery.find_config()
+    deployment = recovery.find_deployment()
+    cast = Cast(deployment=deployment, recovery=recovery, config=config)
+    cast.save()
+    return 'Saved cast with id of {}'.format(cast.id)
 
 def config_device_choices():
     devices = Device.objects.filter(events__isnull=False)
@@ -243,6 +254,11 @@ class ShipLog(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+        if self.event.name == 'Recover':
+            if settings.ASYNC:
+                analyze_cast.delay(self.id)
+            else:
+                analyze_cast(self.id)
 
     def __str__(self):
         return '{:%Y-%m-%d %H:%M:%S}: {} - {} {}'.format(self.timestamp, self.cruise, self.device, self.event)
