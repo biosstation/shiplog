@@ -1,5 +1,10 @@
 $(document).ready(function() {
-    $('#dataTable').dataTable( {
-        "searching": false
+    $('#eventLog').dataTable( {
+        "searching": false,
+        "order": [[ 0, "desc" ]]
+    } );
+    $('#wireLog').dataTable( {
+        "searching": false,
+        "order": [[ 1, "desc" ]]
     } );
 } );
