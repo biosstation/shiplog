@@ -220,11 +220,11 @@ class ShipLog(models.Model):
 
     @classmethod
     def get_log(cls, cruise):
-        return cls.objects.filter(cruise__id=cruise.id)
+        return cls.objects.filter(cruise__id=cruise.id).order_by('timestamp')
 
     @classmethod
     def get_all_logs(cls):
-        return cls.objects.all()
+        return cls.objects.all().order_by('timestamp')
 
     @classmethod
     def _to_df(cls, log):
@@ -255,7 +255,7 @@ class CastReport(models.Model):
 
     @classmethod
     def get_all_logs(cls):
-        return cls.objects.all()
+        return cls.objects.all().order_by('cast__recovery__timestamp')
 
     @classmethod
     def _to_df(cls, log):
@@ -272,13 +272,14 @@ class CastReport(models.Model):
             'max_speed': 'Max Speed',
             'max_payout': 'Max Payout',
         })
+        df = df[['Deployed', 'Recovered', 'Device', 'Max Tension', 'Max Speed', 'Max Payout', 'Wire', 'Winch #']] # reorder columns
         return df
 
     @classmethod
     def get_log(cls, cruise):
         has_winch_number = models.Q(cast__config__winch__gt=0)
         this_cruise = models.Q(cast__cruise_id=cruise.id)
-        return cls.objects.filter(has_winch_number & this_cruise)
+        return cls.objects.filter(has_winch_number & this_cruise).order_by('cast__recovery__timestamp')
 
     def get_winch_data(self):
         deploy_date = self.cast.deployment.timestamp.date()
@@ -319,7 +320,7 @@ class CastReport(models.Model):
     def set_cast_report(self, df):
         try:
             df = self.subset_winch_data(df)
-            if not df.empty:
+            if not df.empty and not df.is_null().all():
                 self.max_tension = float(df['Tension'].max()) # in lbs
                 self.max_payout = float(df['Payout'].max()) # in meters
                 self.max_speed = float(df['Speed'].max()) # in meters per minute
@@ -353,7 +354,7 @@ class Cast(models.Model):
 
     @classmethod
     def get_log(cls, cruise):
-        return cls.objects.filter(cruise__id=cruise.id)
+        return cls.objects.filter(cruise__id=cruise.id).order_by('recovery__timestamp')
 
     def save(self, *args, **kwargs):
         self.cruise = self.recovery.cruise
