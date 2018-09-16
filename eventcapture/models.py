@@ -187,7 +187,7 @@ class GPS(models.Model):
     def _get_gps_record(self, df, timestamp):
         try:
             row = df.iloc[df.index.get_loc(timestamp, method='bfill')]
-        except KeyError:
+        except (AttributeError, KeyError):
             row = None
         return row
 
@@ -213,13 +213,13 @@ class ShipLog(models.Model):
     gps = models.ForeignKey(
         'GPS',
         on_delete=models.CASCADE,
-        default=get_default_gps,
-        help_text='Please note that adding or changing a ship log entry will not capture metadata.  There will be no meteorological data captured for this event.  GPS data will be set to (0°0.0, 0°,0.0) if you choose to save',
+        default=None,
+        help_text='The timestamp will be used to find GPS data. If not GPS data is available, 0°0.0, 0°,0.0 will be used',
     )
     timestamp = models.DateTimeField()
 
     def find_deployment(self):
-        """Given a recover event, find the related deploy event"""
+        """Given a recover event, find the related deploy event. Does not consider if a deployment already has a recovery"""
         same_cruise = models.Q(cruise=self.cruise)
         same_device = models.Q(device=self.device)
         deploy_event = models.Q(event__name='Deploy')
@@ -257,6 +257,11 @@ class ShipLog(models.Model):
         return df
 
     def save(self, *args, **kwargs):
+        # when adding a shiplog in admin, there will be no GPS by default. Use the timestamp to try and find GPS data
+        if not hasattr(self, 'gps'):
+            gps = GPS()
+            gps.save(timestamp=self.timestamp)
+            self.gps = gps
         super().save(*args, **kwargs)
         if self.event.name == 'Recover':
             if settings.ASYNC:
