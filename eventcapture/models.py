@@ -186,7 +186,7 @@ class GPS(models.Model):
 
     def _get_gps_record(self, df, timestamp):
         try:
-            row = df.iloc[df.index.get_loc(timestamp, method='bfill')]
+            row = df.iloc[df.index.get_loc(timestamp, method='nearest', tolerance=pd.Timedelta('30 seconds'))]
         except (AttributeError, KeyError):
             row = None
         return row
@@ -345,7 +345,7 @@ class CastReport(models.Model):
     def set_cast_report(self, df):
         try:
             df = self.subset_winch_data(df)
-            if not df.empty and not df.is_null().all():
+            if not df.empty and not df['Tension'].isnull().all():
                 self.max_tension = float(df['Tension'].max()) # in lbs
                 self.max_payout = float(df['Payout'].max()) # in meters
                 self.max_speed = float(df['Speed'].max()) # in meters per minute
