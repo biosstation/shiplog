@@ -286,8 +286,10 @@ class CastReport(models.Model):
     def _to_df(cls, log):
         columns = list(log.values('cast', 'max_tension', 'max_speed', 'max_payout'))
         df = pd.DataFrame(columns)
-        df['Deployed'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).deployment.timestamp)
-        df['Recovered'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).recovery.timestamp)
+        df['Deployed Date'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).deployment.timestamp.strftime('%Y-%m-%d'))
+        df['Deployed Time'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).deployment.timestamp.strftime('%H:%M:%S'))
+        df['Recovered Date'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).recovery.timestamp.strftime('%Y-%m-%d'))
+        df['Recovered Time'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).recovery.timestamp.strftime('%H:%M:%S'))
         df['Device'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).recovery.device)
         df['Wire'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).config.wire.serial_number)
         df['Winch #'] = df['cast'].apply(lambda x: Cast.objects.get(pk=x).config.winch)
@@ -297,7 +299,7 @@ class CastReport(models.Model):
             'max_speed': 'Max Speed',
             'max_payout': 'Max Payout',
         })
-        df = df[['Deployed', 'Recovered', 'Device', 'Max Tension', 'Max Speed', 'Max Payout', 'Wire', 'Winch #']] # reorder columns
+        df = df[['Deployed Date', 'Deployed Time', 'Recovered Date', 'Recovered Time', 'Device', 'Max Tension', 'Max Speed', 'Max Payout', 'Wire', 'Winch #']] # reorder columns
         return df
 
     @classmethod
