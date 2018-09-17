@@ -162,6 +162,7 @@ class GPS(models.Model):
     longitude_degree = models.IntegerField(default=0)
     latitude_minute = models.DecimalField(max_digits=8, decimal_places=4, default=0)
     longitude_minute = models.DecimalField(max_digits=8, decimal_places=4, default=0)
+    timestamp = models.DateTimeField(blank=True, null=True, default="1970-01-01 00:00:00")
 
     def save(self, timestamp=None, *args, **kwargs):
         df = self._read_gps_file()
@@ -171,6 +172,7 @@ class GPS(models.Model):
             self.longitude_degree = gps['Lon_deg']
             self.latitude_minute = gps['Lat_min']
             self.longitude_minute = gps['Lon_min']
+            self.timestamp = gps.name
         except TypeError:
             pass
         super().save(*args, **kwargs)
@@ -192,7 +194,7 @@ class GPS(models.Model):
         return row
 
     def __str__(self):
-        return '{}°{}'', {}°{}'''.format(self.latitude_degree, self.latitude_minute, self.longitude_degree, self.longitude_minute)
+        return '{}°{}'', {}°{} captured at {}'''.format(self.latitude_degree, self.latitude_minute, self.longitude_degree, self.longitude_minute, self.timestamp)
 
 class ShipLog(models.Model):
     cruise = models.ForeignKey(
