@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 import os
 import pytz
 import ntpath
+from shutil import copyfile
 import numpy as np
 import pandas as pd
 from glob import glob
@@ -330,7 +331,8 @@ class CastReport(models.Model):
                 continue
             winch_date = datetime.strptime(ntpath.basename(f), '%Y-%m-%d %H-%M-%S WinchDAC.csv').date()
             if deploy_date <= winch_date and winch_date <= recover_date:
-                df = pd.read_csv(f, skiprows=skiprows, usecols=usecols)
+                copyfile(f, settings.WINCH_FILE_COPY)
+                df = pd.read_csv(settings.WINCH_FILE_COPY, skiprows=skiprows, usecols=usecols)
                 df['Clock'] = pd.to_datetime(df['Clock'], format='%m/%d/%Y %I:%M:%S %p')
                 df.columns = names
                 winch_data.append(df)

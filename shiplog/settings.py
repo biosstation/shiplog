@@ -131,6 +131,7 @@ WIRE_LOG_FILENAME = '{}_WireLog.csv'
 WIRE_REPORT_FILENAME = '{}_WireReport.csv'
 GPS_FILENAME = '/mnt/gps/MainMetMast_Nav.dat'
 WINCH_DATAFILE_PATH = '/mnt/winch/*WinchDAC.csv'
+WINCH_FILE_COPY = os.path.join(PROJECT_PATH, 'data', 'WinchDAV.csv')
 WINCH_CHOICES = (
     (0, 'No winch'),
     (1, '1'),
