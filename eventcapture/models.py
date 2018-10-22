@@ -189,6 +189,7 @@ class GPS(models.Model):
 
     def _get_gps_record(self, df, timestamp):
         try:
+            df = df.loc[~df.index.duplicated(keep='last')]
             row = df.iloc[df.index.get_loc(timestamp, method='nearest', tolerance=pd.Timedelta('30 seconds'))]
         except (AttributeError, KeyError):
             row = None
